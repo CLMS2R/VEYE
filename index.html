@@ -109,12 +109,12 @@
   .emo-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
   @media (max-width:560px){ .emo-grid{ grid-template-columns:repeat(2,1fr); } }
   .emo{ position:relative; border:2px solid var(--line); background:var(--surface); border-radius:var(--radius-sm); padding:14px 10px 12px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s, border-color .18s; }
-  .emo:hover{ border-color:var(--brand-soft); transform:translateY(-3px) rotate(-2deg) scale(1.03); box-shadow:var(--shadow); }
+  .emo:hover{ border-color:var(--brand-soft); transform:translateY(-3px) scale(1.03); box-shadow:var(--shadow); }
   .emo .e{ font-size:30px; line-height:1; }
   .emo .l{ font-size:12.5px; font-weight:600; color:var(--muted); }
   .emo .dot{ position:absolute; top:9px; right:9px; width:9px; height:9px; border-radius:50%; opacity:.55; }
   .emo.on{ box-shadow:0 10px 24px -12px rgba(0,0,0,.3); animation:pop-emo .28s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes pop-emo{ 0%{ transform:scale(.9); } 60%{ transform:scale(1.08) rotate(1deg); } 100%{ transform:scale(1); } }
+  @keyframes pop-emo{ 0%{ transform:scale(.9); } 60%{ transform:scale(1.09); } 100%{ transform:scale(1); } }
   .emo.on .l{ color:var(--ink); font-weight:800; }
   .emo.on .dot{ display:none; }
   .emo-mood .mico{ filter:drop-shadow(0 2px 4px rgba(60,40,10,.16)); }
@@ -605,7 +605,7 @@ createApp({
     const alreadyDone=computed(()=> !!state.entries[pick.date]);
     const canSave=computed(()=> !!pick.emotion && !state.authBusy);
     function chooseEmotion(id){ pick.emotion = pick.emotion===id?null:id; }
-    function chooseNegative(id){ pick.negative=id; }
+    function chooseNegative(id){ pick.negative = pick.negative===id ? 'none' : id; }
     async function saveEntry(){
       if(!pick.emotion) return;
       const row={ user_id:state.profile.id, entry_date:pick.date, emotion:pick.emotion, negative: pick.negative==='none'?null:pick.negative };
