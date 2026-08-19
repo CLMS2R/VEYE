@@ -167,8 +167,21 @@
   .feed-emos .swatch{ width:12px; height:12px; border-radius:50%; }
 
   .profile-hero{ border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); background:var(--surface); border:1px solid var(--line); margin-bottom:22px; }
-  .hero-band{ height:104px; background:var(--dusk); position:relative; }
+  .hero-band{ height:120px; background:linear-gradient(180deg, rgba(26,18,52,.55) 0%, rgba(26,18,52,.14) 55%, rgba(26,18,52,0) 100%), var(--dusk); position:relative; overflow:hidden; }
   .hero-band .aura{ position:absolute; right:-40px; top:-60px; width:200px; height:200px; border-radius:50%; filter:blur(10px); opacity:.55; }
+  .sky-star{ position:absolute; border-radius:50%; background:#fff; box-shadow:0 0 5px rgba(255,255,255,.85); opacity:.7; animation:twinkle-star 3.4s ease-in-out infinite; }
+  @keyframes twinkle-star{ 0%,100%{ opacity:.28; transform:scale(.65); } 50%{ opacity:1; transform:scale(1); } }
+  .sky-moon{ position:absolute; width:48px; height:48px;
+    left:calc((100% - 72px) * (1 - var(--lift,0)) + (50% - 24px) * var(--lift,0));
+    top:calc((100% - 60px) * (1 - var(--lift,0)) + 12px * var(--lift,0));
+    transition:left 1.2s cubic-bezier(.22,1,.36,1), top 1.2s cubic-bezier(.22,1,.36,1);
+    animation:moon-appear .7s ease both, moon-float 5.5s ease-in-out 1s infinite; }
+  .sky-moon .mico{ position:relative; z-index:1; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,.28)); transform-origin:50% 50%; animation:moon-spin 12s linear infinite; }
+  .sky-glow{ position:absolute; left:50%; top:50%; width:132px; height:132px; transform:translate(-50%,-50%); border-radius:50%; filter:blur(7px); opacity:calc(.26 + var(--lift,0) * .74); transition:opacity 1.2s ease; pointer-events:none; animation:glow-pulse 4.2s ease-in-out infinite; }
+  @keyframes moon-appear{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes moon-spin{ to{ transform:rotate(360deg); } }
+  @keyframes moon-float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  @keyframes glow-pulse{ 0%,100%{ transform:translate(-50%,-50%) scale(.9); } 50%{ transform:translate(-50%,-50%) scale(1.08); } }
   .hero-body{ padding:0 24px 22px; display:flex; align-items:flex-end; gap:18px; margin-top:-42px; flex-wrap:wrap; position:relative; z-index:1; }
   .hero-av{ width:84px; height:84px; border-radius:22px; background:var(--surface); border:3px solid var(--surface); box-shadow:var(--shadow); display:grid; place-items:center; font-size:42px; flex:none; }
   .hero-id{ flex:1; min-width:0; padding-bottom:2px; }
@@ -398,6 +411,13 @@ const NEGATIVES = [
 const AVATARS = ['🦊','🐻','🦉','🐢','🦋','🐙','🦁','🐳','🌙','🌻','🍄','🪐','🦇','🐈','🦔','🌵'];
 const emoById = Object.fromEntries(EMOTIONS.map(e=>[e.id,e]));
 const negById = Object.fromEntries(NEGATIVES.map(n=>[n.id,n]));
+const SKY_STARS = [
+  {x:7,y:20,s:2},{x:15,y:52,s:1.4},{x:23,y:30,s:1.7},{x:32,y:62,s:1.3},
+  {x:40,y:16,s:2.2},{x:48,y:42,s:1.4},{x:55,y:26,s:1.6},{x:62,y:56,s:1.3},
+  {x:69,y:18,s:2},{x:75,y:46,s:1.5},{x:82,y:30,s:1.8},{x:88,y:58,s:1.3},
+  {x:93,y:22,s:1.5},{x:12,y:70,s:1.3},{x:52,y:68,s:1.4},{x:35,y:44,s:1.2},
+  {x:66,y:38,s:1.3},{x:20,y:10,s:1.5},{x:44,y:60,s:1.2},{x:78,y:12,s:1.6}
+];
 
 /* ---------- Icônes lune (mascotte déclinée par émotion / point négatif) ---------- */
 function lum(hex){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)/255; }
@@ -501,11 +521,12 @@ createApp({
       entries:{}, friends:[], incoming:[], outgoing:[], feed:[], friendDays:[],
       view:'checkin', profileView:null, selCell:null, step:1,
       recapY: today().getFullYear(), recapM: today().getMonth(),
-      theme:'light', confirmRemove:null,
+      theme:'light', confirmRemove:null, moonLift:0,
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
     function scrollCalRight(){ nextTick(()=>{ const el=calScroll.value; if(el) el.scrollLeft = 0; }); }
+    function riseMoon(){ state.moonLift = 0; requestAnimationFrame(()=>requestAnimationFrame(()=>{ state.moonLift = stats.value.top ? Math.min(stats.value.streak,10)/10 : 0; })); }
     function flash(msg,color=null){ toast.msg=msg; toast.color=color; toast.show=true; clearTimeout(tTimer); tTimer=setTimeout(()=>toast.show=false,2600); }
 
     /* ---------------- auth ---------------- */
@@ -634,7 +655,7 @@ createApp({
       let prof = typeof p==='string' ? (await sb.from('profiles').select('*').eq('id',p).maybeSingle()).data : p;
       if(!prof) return;
       const entries = await fetchEntries(prof.id);
-      state.profileView={ profile:prof, entries }; state.selCell=null; state.view='profile'; scrollCalRight();
+      state.profileView={ profile:prof, entries }; state.selCell=null; state.view='profile'; scrollCalRight(); riseMoon();
     }
     function selectCell(cell){ if(!cell || cell.future) return; state.selCell = cell; }
     function relationTo(id){
@@ -680,7 +701,7 @@ createApp({
     function applyTheme(t){ state.theme=t; document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('veille_theme', t); }catch(e){} }
     function toggleTheme(){ applyTheme(state.theme==='dark'?'light':'dark'); }
 
-    function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; scrollCalRight(); } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
+    function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; scrollCalRight(); riseMoon(); } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
 
     /* ---------------- résonance : même émotion qu'un ami, hier ---------------- */
     const resonances = computed(()=>{
@@ -813,7 +834,7 @@ createApp({
     });
 
     return {
-      state, toast, EMOTIONS, NEGATIVES, AVATARS, emoById, negById,
+      state, toast, EMOTIONS, NEGATIVES, AVATARS, emoById, negById, SKY_STARS,
       authMode, authForm, authError, authNotice, switchAuth, doRegister, doLogin, logout,
       pick, alreadyDone, canSave, chooseEmotion, chooseNegative, saveEntry, pickPreview, loadPickFor, minDate, maxDate, nextStep, prevStep,
       activeProfile, activeEntries, isSelf, calendar, stats, recentEntries, canSeeEntries, openProfile, relationTo, incomingFid,
@@ -991,7 +1012,13 @@ createApp({
 
     <section v-else-if="state.view==='profile' && activeProfile">
       <div class="profile-hero">
-        <div class="hero-band"><div class="aura" :style="{background: stats.top?stats.top.color:'#fff'}"></div></div>
+        <div class="hero-band">
+          <span v-for="(st,i) in SKY_STARS" :key="i" class="sky-star" :style="{left:st.x+'%', top:st.y+'%', width:st.s+'px', height:st.s+'px', animationDelay:(i*0.19)+'s'}"></span>
+          <div v-if="stats.top" class="sky-moon" :style="{'--lift': state.moonLift}" :title="'Série de '+stats.streak+' jour'+(stats.streak>1?'s':'')">
+            <span class="sky-glow" :style="{background:'radial-gradient(circle, '+stats.top.color+'d9 0%, '+stats.top.color+'00 70%)'}"></span>
+            <span class="mico" v-html="emoMoon(stats.top.id,48)"></span>
+          </div>
+        </div>
         <div class="hero-body">
           <div class="hero-av">{{ activeProfile.avatar }}</div>
           <div class="hero-id"><h1>{{ activeProfile.display_name }}</h1><div class="handle">@{{ activeProfile.username }} · depuis {{ longDate(activeProfile.created_at.slice(0,10)) }}</div></div>
