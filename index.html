@@ -117,11 +117,8 @@
   @keyframes pop-emo{ 0%{ transform:scale(.9); } 60%{ transform:scale(1.08) rotate(1deg); } 100%{ transform:scale(1); } }
   .emo.on .l{ color:var(--ink); font-weight:800; }
   .emo.on .dot{ display:none; }
-  .emo-mood{ border-color:transparent; }
-  .emo-mood .mico{ filter:drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
+  .emo-mood .mico{ filter:drop-shadow(0 2px 4px rgba(60,40,10,.16)); }
   .emo-mood .l{ font-weight:800; }
-  .emo-mood.on{ border-color:transparent; box-shadow:inset 0 0 0 3px rgba(255,255,255,.92), 0 14px 26px -12px rgba(0,0,0,.4); }
-  .emo-mood.on .l{ color:inherit; }
   .neg .emo.on{ border-color:transparent; color:#fff; }
   .neg .emo.on .l{ color:rgba(255,255,255,.92); }
   .neg .emo .e{ font-size:26px; }
@@ -406,9 +403,7 @@ const negById = Object.fromEntries(NEGATIVES.map(n=>[n.id,n]));
 function lum(hex){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)/255; }
 function emoMoon(id,size,mascot){
   const c=emoById[id]||{color:'#F3C25A'}; const s=size||24;
-  const body = mascot ? '#F5C95B' : c.color;
   const FC = mascot ? '#1A1622' : (lum(c.color)>0.62 ? '#4A3A16' : '#FFFFFF');
-  const rim = mascot ? 'rgba(90,60,10,.28)' : 'rgba(0,0,0,.08)';
   const faces={
     radiant:`<g fill="none" stroke="${FC}" stroke-width="1.7" stroke-linecap="round"><path d="M9.6 15q2.2-2.5 4.4 0"/><path d="M18 15q2.2-2.5 4.4 0"/><path d="M11 18.2q5 4.6 10 0"/></g>`,
     content:`<circle cx="12" cy="14.8" r="1.2" fill="${FC}"/><circle cx="20" cy="14.8" r="1.2" fill="${FC}"/><path d="M12 18.4q4 3 8 0" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
@@ -421,7 +416,11 @@ function emoMoon(id,size,mascot){
   };
   const blush=`<circle cx="9.4" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/><circle cx="22.6" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/>`;
   const wb=['radiant','content','serein'].includes(id)?blush:'';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${body}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".16"/><circle cx="16" cy="16" r="15" fill="none" stroke="${rim}" stroke-width="1"/>${faces[id]||''}${wb}</svg>`;
+  if(mascot){
+    const gid='mg-'+id;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><defs><radialGradient id="${gid}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FBE9B8"/><stop offset="1" stop-color="#F3C25A"/></radialGradient></defs><circle cx="16" cy="16" r="15" fill="url(#${gid})"/><circle cx="16" cy="16" r="15" fill="none" stroke="rgba(120,80,20,.22)" stroke-width="1"/><circle cx="23.2" cy="8.8" r="1.5" fill="#E7B94C" opacity=".55"/><circle cx="26" cy="12.4" r="0.9" fill="#E7B94C" opacity=".5"/><circle cx="8.8" cy="21.5" r="1.1" fill="#E7B94C" opacity=".4"/>${faces[id]||''}${blush}</svg>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${c.color}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".16"/><circle cx="16" cy="16" r="15" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="1"/>${faces[id]||''}${wb}</svg>`;
 }
 function textOn(hex){ return lum(hex)>0.62 ? '#2C2540' : '#FFFFFF'; }
 function negMoon(id,size){
@@ -915,8 +914,8 @@ createApp({
             <div class="row"><h3>L'émotion générale de {{ relativeDay(pick.date) }}</h3></div>
             <p class="wizard-sub">Choisissez celle qui résume le mieux la journée.</p>
             <div class="emo-grid">
-              <button v-for="e in EMOTIONS" :key="e.id" class="emo emo-mood" :class="{on:pick.emotion===e.id}" :style="{background:e.color}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
-                <span class="e mico" v-html="emoMoon(e.id,36,true)"></span><span class="l" :style="{color:textOn(e.color)}">{{ e.label }}</span>
+              <button v-for="e in EMOTIONS" :key="e.id" class="emo emo-mood" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{borderColor:e.color, boxShadow:'0 0 0 4px '+e.color+'26, 0 12px 26px -12px '+e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
+                <span class="e mico" v-html="emoMoon(e.id,36,true)"></span><span class="l" :style="{color:e.color}">{{ e.label }}</span>
               </button>
             </div>
             <div class="wizard-foot">
