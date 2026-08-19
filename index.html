@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Veille — journal d'humeurs partagé</title>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#F0EEF4; --surface:#FFFFFF; --surface-2:#F7F5FA;
+    --ink:#241F2E; --muted:#7C7689; --faint:#A9A3B4; --line:#E6E2EC; --line-2:#EFECF3;
+    --brand:#5A50D4; --brand-ink:#4038A8; --brand-soft:#ECEAFB; --accent:#EE9E5E; --danger:#E85D6B;
+    --radius:18px; --radius-sm:12px;
+    --shadow:0 1px 2px rgba(36,31,46,.04), 0 8px 24px -12px rgba(36,31,46,.18);
+    --shadow-lg:0 24px 60px -24px rgba(36,31,46,.35);
+    --dusk:linear-gradient(135deg,#4B3F86 0%,#6B5AB8 38%,#C98BB0 72%,#EE9E5E 100%);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; line-height:1.5; }
+  h1,h2,h3{ font-family:'Fraunces',Georgia,serif; font-weight:500; letter-spacing:-.01em; margin:0; }
+  button{ font-family:inherit; cursor:pointer; }
+  a{ color:var(--brand); }
+  ::selection{ background:var(--brand-soft); }
+  :focus-visible{ outline:2px solid var(--brand); outline-offset:2px; border-radius:6px; }
+
+  .app{ min-height:100vh; display:flex; flex-direction:column; }
+  .center-screen{ min-height:100vh; display:grid; place-items:center; padding:24px; }
+  .spinner{ width:34px; height:34px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--brand); animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .topbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:20px; padding:14px clamp(16px,4vw,40px); background:rgba(240,238,244,.82); backdrop-filter:saturate(1.4) blur(12px); border-bottom:1px solid var(--line); }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; letter-spacing:-.02em; }
+  .brand .moon{ width:26px; height:26px; border-radius:50%; background:var(--dusk); box-shadow:inset -6px -3px 0 0 rgba(255,255,255,.35); flex:none; }
+  .nav{ display:flex; gap:4px; margin-left:8px; }
+  .nav button{ border:none; background:transparent; color:var(--muted); font-size:14px; font-weight:500; padding:8px 14px; border-radius:10px; }
+  .nav button:hover{ color:var(--ink); background:var(--surface-2); }
+  .nav button.active{ color:var(--brand-ink); background:var(--brand-soft); }
+  .spacer{ flex:1; }
+  .whoami{ display:flex; align-items:center; gap:10px; }
+  .whoami .av{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:16px; background:var(--surface); border:1px solid var(--line); }
+  .whoami .nm{ font-size:14px; font-weight:600; }
+  .ghost{ border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:13px; font-weight:500; padding:8px 12px; border-radius:10px; }
+  .ghost:hover{ color:var(--ink); border-color:var(--faint); }
+
+  main{ flex:1; width:100%; max-width:940px; margin:0 auto; padding:clamp(20px,4vw,44px) clamp(16px,4vw,40px) 80px; }
+
+  .auth-wrap{ min-height:100vh; display:grid; grid-template-columns:1.05fr .95fr; }
+  @media (max-width:820px){ .auth-wrap{ grid-template-columns:1fr; } .auth-aside{ display:none; } }
+  .auth-aside{ background:var(--dusk); color:#fff; padding:48px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+  .auth-aside .stars{ position:absolute; inset:0; opacity:.5; }
+  .auth-aside h1{ font-size:clamp(34px,4.4vw,52px); line-height:1.02; color:#fff; font-weight:500; max-width:14ch; }
+  .auth-aside h1 em{ font-style:italic; font-weight:400; }
+  .auth-aside p{ max-width:34ch; color:rgba(255,255,255,.85); font-size:15px; }
+  .auth-aside .kicker{ font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.7); font-weight:600; }
+  .aside-strip{ display:flex; gap:7px; }
+  .aside-strip i{ width:22px; height:22px; border-radius:6px; display:block; }
+
+  .auth-form-side{ display:grid; place-items:center; padding:40px 24px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:clamp(22px,3vw,32px); }
+  .auth-card{ width:min(400px,100%); }
+  .auth-card h2{ font-size:26px; }
+  .auth-card .sub{ color:var(--muted); font-size:14px; margin:6px 0 22px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--ink); }
+  .field input{ width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px; font-size:15px; font-family:inherit; background:var(--surface-2); color:var(--ink); }
+  .field input:focus{ outline:none; border-color:var(--brand); background:var(--surface); box-shadow:0 0 0 3px var(--brand-soft); }
+  .avatar-pick{ display:flex; flex-wrap:wrap; gap:6px; }
+  .avatar-pick button{ width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--surface-2); font-size:20px; display:grid; place-items:center; }
+  .avatar-pick button.on{ border-color:var(--brand); background:var(--brand-soft); box-shadow:0 0 0 3px var(--brand-soft); }
+
+  .btn{ width:100%; border:none; background:var(--ink); color:#fff; font-weight:600; font-size:15px; padding:13px; border-radius:12px; margin-top:6px; transition:transform .06s ease, background .15s; }
+  .btn:hover{ background:#332c42; }
+  .btn:active{ transform:translateY(1px); }
+  .btn.brand{ background:var(--brand); }
+  .btn.brand:hover{ background:var(--brand-ink); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .switch{ text-align:center; font-size:14px; color:var(--muted); margin-top:16px; }
+  .switch button{ border:none; background:none; color:var(--brand); font-weight:600; font-size:14px; padding:0; }
+  .err{ background:#FDECEE; color:#B23545; font-size:13px; padding:10px 12px; border-radius:10px; margin-bottom:14px; border:1px solid #F6D3D8; }
+  .notice{ background:#EAF7EF; color:#1B7F4B; font-size:13px; padding:10px 12px; border-radius:10px; margin-bottom:14px; border:1px solid #CBEBD7; }
+
+  .page-head{ margin-bottom:24px; }
+  .eyebrow{ font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); font-weight:700; }
+  .page-head h1{ font-size:clamp(28px,4vw,38px); margin-top:6px; }
+  .page-head h1 em{ font-style:italic; color:var(--brand-ink); font-weight:400; }
+  .page-head .lead{ color:var(--muted); font-size:15px; margin-top:8px; max-width:56ch; }
+
+  .checkin{ margin-bottom:26px; }
+  .checkin .row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .checkin h3{ font-size:19px; }
+  .checkin h3 .opt{ font-family:'Inter'; font-size:12px; font-weight:600; color:var(--faint); letter-spacing:.04em; text-transform:uppercase; margin-left:8px; }
+  .date-note{ font-size:13px; color:var(--muted); }
+  .date-note b{ color:var(--ink); font-weight:600; }
+
+  .emo-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:560px){ .emo-grid{ grid-template-columns:repeat(2,1fr); } }
+  .emo{ position:relative; border:1.5px solid var(--line); background:var(--surface); border-radius:var(--radius-sm); padding:14px 10px 12px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; transition:.14s; }
+  .emo:hover{ border-color:var(--faint); transform:translateY(-2px); box-shadow:var(--shadow); }
+  .emo .e{ font-size:30px; line-height:1; }
+  .emo .l{ font-size:12.5px; font-weight:600; color:var(--muted); }
+  .emo .dot{ position:absolute; top:9px; right:9px; width:9px; height:9px; border-radius:50%; opacity:.55; }
+  .emo.on{ border-color:transparent; color:#fff; box-shadow:0 8px 20px -8px rgba(0,0,0,.35); }
+  .emo.on .l{ color:rgba(255,255,255,.92); }
+  .emo.on .dot{ display:none; }
+  .neg .emo .e{ font-size:26px; }
+  .neg-none{ border:1.5px dashed var(--line); background:var(--surface-2); color:var(--muted); border-radius:var(--radius-sm); padding:0 16px; font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:8px; min-height:44px; }
+  .neg-none.on{ border-style:solid; border-color:var(--brand); background:var(--brand-soft); color:var(--brand-ink); }
+
+  .checkin-foot{ display:flex; align-items:center; gap:14px; margin-top:20px; flex-wrap:wrap; }
+  .checkin-foot .btn{ width:auto; padding:12px 26px; margin:0; }
+  .preview{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); }
+  .preview .chip{ display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-weight:600; font-size:13px; color:#fff; }
+  .saved-flag{ font-size:13px; color:#1FA971; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .backfill{ margin-top:14px; font-size:13px; }
+  .backfill summary{ color:var(--brand); font-weight:600; cursor:pointer; width:max-content; }
+  .backfill .bf-body{ margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:var(--muted); }
+  .backfill input[type=date]{ padding:8px 10px; border:1px solid var(--line); border-radius:10px; font-family:inherit; font-size:14px; background:var(--surface-2); }
+
+  .feed h3{ font-size:17px; margin-bottom:2px; }
+  .feed .muted-line{ color:var(--muted); font-size:14px; margin-bottom:16px; }
+  .feed-item{ display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--line-2); }
+  .feed-item:first-of-type{ border-top:none; }
+  .feed-av{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-size:20px; background:var(--surface-2); border:1px solid var(--line); flex:none; cursor:pointer; }
+  .feed-main{ flex:1; min-width:0; }
+  .feed-main .nm button{ border:none; background:none; padding:0; font:inherit; color:inherit; font-weight:600; cursor:pointer; font-size:14.5px; }
+  .feed-main .nm button:hover{ color:var(--brand); }
+  .feed-main .meta{ font-size:13px; color:var(--muted); }
+  .feed-emos{ display:flex; align-items:center; gap:8px; }
+  .feed-emos .big{ font-size:24px; }
+  .feed-emos .swatch{ width:12px; height:12px; border-radius:50%; }
+
+  .profile-hero{ border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); background:var(--surface); border:1px solid var(--line); margin-bottom:22px; }
+  .hero-band{ height:104px; background:var(--dusk); position:relative; }
+  .hero-band .aura{ position:absolute; right:-40px; top:-60px; width:200px; height:200px; border-radius:50%; filter:blur(10px); opacity:.55; }
+  .hero-body{ padding:0 24px 22px; display:flex; align-items:flex-end; gap:18px; margin-top:-42px; flex-wrap:wrap; }
+  .hero-av{ width:84px; height:84px; border-radius:22px; background:var(--surface); border:3px solid var(--surface); box-shadow:var(--shadow); display:grid; place-items:center; font-size:42px; flex:none; }
+  .hero-id{ flex:1; min-width:180px; padding-bottom:2px; }
+  .hero-id h1{ font-size:27px; }
+  .hero-id .handle{ color:var(--muted); font-size:14px; }
+  .hero-actions{ padding-bottom:4px; }
+  .hero-actions .btn{ width:auto; padding:10px 18px; margin:0; font-size:14px; }
+
+  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
+  @media (max-width:560px){ .stats{ grid-template-columns:1fr; } }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px 18px; }
+  .stat .n{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .stat .k{ font-size:12.5px; color:var(--muted); font-weight:600; letter-spacing:.03em; margin-top:2px; }
+
+  .cal-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:22px; }
+  .cal-card .cal-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap; }
+  .cal-card h3{ font-size:18px; }
+  .cal-scroll{ overflow-x:auto; padding-bottom:6px; }
+  .cal{ display:inline-grid; grid-template-columns:auto 1fr; gap:6px 8px; }
+  .cal .months{ grid-column:2; display:flex; height:14px; position:relative; font-size:11px; color:var(--muted); }
+  .cal .months span{ position:absolute; white-space:nowrap; }
+  .cal .daylabels{ display:grid; grid-template-rows:repeat(7,13px); gap:3px; font-size:10px; color:var(--faint); }
+  .cal .daylabels span{ line-height:13px; height:13px; }
+  .grid{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,13px); gap:3px; }
+  .cell{ width:13px; height:13px; border-radius:3px; background:var(--surface-2); border:1px solid rgba(36,31,46,.05); position:relative; }
+  .cell.filled{ border-color:rgba(0,0,0,.06); }
+  .cell.empty-future{ background:transparent; border-color:transparent; }
+  .cell:hover .tip{ display:block; }
+  .tip{ display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; font-size:12px; line-height:1.4; padding:8px 10px; border-radius:8px; white-space:nowrap; z-index:5; box-shadow:var(--shadow-lg); pointer-events:none; }
+  .tip .t-emos{ font-size:15px; }
+  .tip:after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); }
+  .legend{ display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+  .legend .items{ display:flex; gap:5px; flex-wrap:wrap; }
+  .legend .li{ display:flex; align-items:center; gap:5px; }
+  .legend .sw{ width:12px; height:12px; border-radius:3px; }
+
+  .recent h3{ font-size:18px; margin-bottom:4px; }
+  .recent-item{ display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--line-2); }
+  .recent-item:first-of-type{ border-top:none; }
+  .recent-item .r-emos{ font-size:24px; width:64px; }
+  .recent-item .r-date{ font-weight:600; font-size:14px; }
+  .recent-item .r-tags{ color:var(--muted); font-size:13px; }
+
+  .fr-add{ display:flex; gap:10px; margin-bottom:6px; }
+  .fr-add input{ flex:1; padding:11px 14px; border:1px solid var(--line); border-radius:12px; font-size:14px; font-family:inherit; background:var(--surface-2); }
+  .fr-add input:focus{ outline:none; border-color:var(--brand); background:var(--surface); box-shadow:0 0 0 3px var(--brand-soft); }
+  .fr-add .btn{ width:auto; padding:11px 20px; margin:0; }
+  .fr-hint{ font-size:13px; color:var(--muted); margin-bottom:24px; }
+  .fr-hint code{ background:var(--surface-2); padding:1px 6px; border-radius:6px; border:1px solid var(--line); }
+  .section-title{ font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); font-weight:700; margin:26px 0 12px; }
+  .fr-row{ display:flex; align-items:center; gap:14px; padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:8px; }
+  .fr-row .av{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:22px; background:var(--surface-2); border:1px solid var(--line); flex:none; }
+  .fr-row .nm{ font-weight:600; font-size:15px; }
+  .fr-row .hd{ color:var(--muted); font-size:13px; }
+  .fr-row .acts{ margin-left:auto; display:flex; gap:8px; }
+  .mini{ border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; }
+  .mini:hover{ border-color:var(--faint); }
+  .mini.brand{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  .mini.brand:hover{ background:var(--brand-ink); }
+  .mini.warn{ color:var(--danger); }
+  .badge{ display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; font-weight:700; margin-left:6px; }
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty .big{ font-size:34px; margin-bottom:10px; }
+  .private-note{ text-align:center; padding:30px 20px; color:var(--muted); background:var(--surface-2); border:1px dashed var(--line); border-radius:var(--radius-sm); }
+
+  .toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:500; box-shadow:var(--shadow-lg); z-index:60; display:flex; align-items:center; gap:8px; }
+  .toast .sw{ width:12px; height:12px; border-radius:50%; }
+
+  .setup{ max-width:660px; }
+  .setup h2{ font-size:26px; margin-bottom:8px; }
+  .setup p{ color:var(--muted); font-size:14.5px; }
+  .setup ol{ padding-left:20px; color:var(--ink); font-size:14.5px; }
+  .setup li{ margin:10px 0; }
+  .code-block{ font-family:'JetBrains Mono',ui-monospace,monospace; background:#241F2E; color:#EDE9F5; padding:14px 16px; border-radius:12px; font-size:12.5px; overflow:auto; white-space:pre; line-height:1.6; margin-top:10px; }
+  .code-block .k{ color:#C7A2FF; } .code-block .s{ color:#8FE3B0; }
+
+  .pop-enter-active{ animation:pop .22s ease; }
+  @keyframes pop{ from{ transform:translateX(-50%) translateY(8px); opacity:0; } to{ transform:translateX(-50%) translateY(0); opacity:1; } }
+  @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const { createApp, reactive, computed, onMounted, ref } = Vue;
+
+/* =====================================================================
+   ⚙️  CONFIGURATION — remplacez ces deux valeurs par les vôtres.
+   Elles se trouvent dans : Supabase → Project Settings → API
+   ( « Project URL »  et  la clé publique « anon » ).
+   Exposer la clé anon ici est normal : c'est la RLS qui protège les données.
+   ===================================================================== */
+const SUPABASE_URL      = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+
+const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-');
+const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ---------- données de référence ---------- */
+const EMOTIONS = [
+  { id:'radiant', emoji:'😄', label:'Rayonnant', color:'#1FA971' },
+  { id:'content', emoji:'🙂', label:'Content',   color:'#7DBF57' },
+  { id:'serein',  emoji:'😌', label:'Serein',    color:'#22B0A6' },
+  { id:'neutre',  emoji:'😐', label:'Neutre',    color:'#A6A0AD' },
+  { id:'mitige',  emoji:'😕', label:'Mitigé',    color:'#E6A93B' },
+  { id:'anxieux', emoji:'😰', label:'Anxieux',   color:'#7B6FE0' },
+  { id:'triste',  emoji:'😔', label:'Triste',    color:'#5788E0' },
+  { id:'colere',  emoji:'😡', label:'En colère', color:'#E85D6B' },
+];
+const NEGATIVES = [
+  { id:'travail',emoji:'💼',label:'Travail' },{ id:'relations',emoji:'💔',label:'Relations' },
+  { id:'sante',emoji:'🤒',label:'Santé' },{ id:'argent',emoji:'💸',label:'Argent' },
+  { id:'fatigue',emoji:'😴',label:'Fatigue' },{ id:'moral',emoji:'🌧️',label:'Moral' },
+  { id:'social',emoji:'👥',label:'Social' },{ id:'autre',emoji:'🌀',label:'Autre' },
+];
+const AVATARS = ['🦊','🐻','🦉','🐢','🦋','🐙','🦁','🐳','🌙','🌻','🍄','🪐','🦇','🐈','🦔','🌵'];
+const emoById = Object.fromEntries(EMOTIONS.map(e=>[e.id,e]));
+const negById = Object.fromEntries(NEGATIVES.map(n=>[n.id,n]));
+
+/* ---------- dates ---------- */
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function today(){ return new Date(); }
+function yesterday(){ const d=new Date(); d.setDate(d.getDate()-1); return d; }
+function parseYmd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+const MONTHS_FR=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function longDate(s){ const d=parseYmd(s); return `${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`; }
+function relativeDay(s){ const t=ymd(today()),y=ymd(yesterday()); return s===t?"aujourd'hui":s===y?'hier':longDate(s); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ---------- calendrier & stats (fonctions pures sur une map date->entry) ---------- */
+function buildCalendar(entries){
+  const end=today(); const start=new Date(end); start.setDate(start.getDate()-364);
+  start.setDate(start.getDate() - ((start.getDay()+6)%7));
+  const weeks=[]; let cur=new Date(start); const todayStr=ymd(today()); let wi=-1;
+  while(cur<=end || (cur.getDay()+6)%7!==0){
+    if((cur.getDay()+6)%7===0){ weeks.push([]); wi=weeks.length-1; }
+    const s=ymd(cur), e=entries[s];
+    weeks[wi].push({ date:s, future:cur>end, entry:e||null, isToday:s===todayStr, color:e?emoById[e.emotion].color:null });
+    cur.setDate(cur.getDate()+1);
+    if(weeks.length>60) break;
+  }
+  const monthMarks=[]; let last=-1;
+  weeks.forEach((wk,i)=>{ const f=parseYmd(wk[0].date); if(f.getMonth()!==last){ monthMarks.push({i,label:MONTHS_FR[f.getMonth()].replace('.','')}); last=f.getMonth(); } });
+  return { weeks, monthMarks };
+}
+function buildStats(entries){
+  const keys=Object.keys(entries); const tally={};
+  keys.forEach(k=>{ tally[entries[k].emotion]=(tally[entries[k].emotion]||0)+1; });
+  let topId=null,topN=0; for(const id in tally){ if(tally[id]>topN){ topN=tally[id]; topId=id; } }
+  let streak=0; const d=new Date(); if(!entries[ymd(d)]) d.setDate(d.getDate()-1);
+  while(entries[ymd(d)]){ streak++; d.setDate(d.getDate()-1); }
+  return { total:keys.length, top: topId?emoById[topId]:null, streak };
+}
+
+createApp({
+  setup(){
+    const state = reactive({
+      configured:CONFIGURED, ready:false, authBusy:false,
+      session:null, profile:null,
+      entries:{}, friends:[], incoming:[], outgoing:[], feed:[],
+      view:'checkin', profileView:null,
+    });
+    const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
+    function flash(msg,color=null){ toast.msg=msg; toast.color=color; toast.show=true; clearTimeout(tTimer); tTimer=setTimeout(()=>toast.show=false,2600); }
+
+    /* ---------------- auth ---------------- */
+    const authMode=reactive({ v:'login' });
+    const authForm=reactive({ email:'',username:'',displayName:'',password:'',avatar:'🦊' });
+    const authError=ref(''); const authNotice=ref('');
+    function switchAuth(m){ authMode.v=m; authError.value=''; authNotice.value=''; }
+
+    async function doRegister(){
+      authError.value=''; authNotice.value='';
+      const u=authForm.username.trim().toLowerCase().replace(/\s+/g,'');
+      if(u.length<3){ authError.value="L'identifiant doit faire au moins 3 caractères."; return; }
+      if(!/^[a-z0-9_.]+$/.test(u)){ authError.value="Identifiant : lettres, chiffres, . et _ uniquement."; return; }
+      if(!authForm.email.includes('@')){ authError.value="Renseignez un email valide."; return; }
+      if(authForm.password.length<6){ authError.value="Mot de passe : 6 caractères minimum."; return; }
+      state.authBusy=true;
+      try{
+        const { data:ok } = await sb.rpc('username_available',{ u });
+        if(ok===false){ authError.value="Cet identifiant est déjà pris."; state.authBusy=false; return; }
+        const { data, error } = await sb.auth.signUp({
+          email:authForm.email.trim(), password:authForm.password,
+          options:{ data:{ username:u, display_name:authForm.displayName.trim()||u, avatar:authForm.avatar } }
+        });
+        if(error){ authError.value=humanAuthError(error); state.authBusy=false; return; }
+        if(!data.session){ authNotice.value="Compte créé ! Confirmez votre email puis connectez-vous."; switchAuth('login'); }
+      }catch(e){ authError.value="Erreur réseau. Réessayez."; }
+      state.authBusy=false;
+    }
+    async function doLogin(){
+      authError.value=''; authNotice.value=''; state.authBusy=true;
+      try{
+        const { error } = await sb.auth.signInWithPassword({ email:authForm.email.trim(), password:authForm.password });
+        if(error){ authError.value=humanAuthError(error); }
+      }catch(e){ authError.value="Erreur réseau. Réessayez."; }
+      state.authBusy=false;
+    }
+    async function logout(){ await sb.auth.signOut(); state.profile=null; state.session=null; }
+    function humanAuthError(e){
+      const m=(e.message||'').toLowerCase();
+      if(m.includes('invalid login')) return "Email ou mot de passe incorrect.";
+      if(m.includes('already registered')||m.includes('already exists')) return "Un compte existe déjà avec cet email.";
+      if(m.includes('confirm')) return "Vérifiez votre email pour confirmer le compte.";
+      if(m.includes('database error')) return "Identifiant peut-être déjà pris — essayez-en un autre.";
+      return e.message||"Une erreur est survenue.";
+    }
+
+    /* ---------------- chargement des données ---------------- */
+    async function fetchEntries(uid){
+      const { data } = await sb.from('entries').select('*').eq('user_id',uid);
+      const map={}; (data||[]).forEach(r=>{ map[r.entry_date]={ emotion:r.emotion, negative:r.negative, at:new Date(r.created_at).getTime() }; });
+      return map;
+    }
+    async function loadFriendGraph(){
+      const uid=state.profile.id;
+      const { data:links } = await sb.from('friendships').select('*').or(`requester_id.eq.${uid},addressee_id.eq.${uid}`);
+      const others=(links||[]).map(l=> l.requester_id===uid ? l.addressee_id : l.requester_id);
+      let pmap={};
+      if(others.length){ const { data:profs } = await sb.from('profiles').select('*').in('id',others); pmap=Object.fromEntries((profs||[]).map(p=>[p.id,p])); }
+      const friends=[],incoming=[],outgoing=[];
+      (links||[]).forEach(l=>{
+        const otherId = l.requester_id===uid ? l.addressee_id : l.requester_id;
+        const prof=pmap[otherId]; if(!prof) return;
+        if(l.status==='accepted') friends.push({ fid:l.id, profile:prof });
+        else if(l.addressee_id===uid) incoming.push({ fid:l.id, profile:prof });
+        else outgoing.push({ fid:l.id, profile:prof });
+      });
+      state.friends=friends; state.incoming=incoming; state.outgoing=outgoing;
+      const ids=friends.map(f=>f.profile.id);
+      if(ids.length){
+        const { data:fe } = await sb.from('entries').select('*').in('user_id',ids).order('created_at',{ascending:false}).limit(10);
+        state.feed=(fe||[]).map(r=>({ user:pmap[r.user_id], date:r.entry_date, emo:emoById[r.emotion], neg:r.negative?negById[r.negative]:null }));
+      } else state.feed=[];
+    }
+    async function refreshMe(){
+      const uid=state.session.user.id;
+      let { data:prof } = await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
+      if(!prof){ await sleep(500); ({ data:prof } = await sb.from('profiles').select('*').eq('id',uid).maybeSingle()); }
+      state.profile=prof;
+      if(!prof) return;
+      state.entries=await fetchEntries(uid);
+      await loadFriendGraph();
+      loadPickFor(ymd(yesterday()));
+    }
+    async function handleSession(session){
+      state.session=session;
+      if(session){ if(!state.profile||state.profile.id!==session.user.id) await refreshMe(); }
+      else { state.profile=null; state.profileView=null; }
+    }
+
+    /* ---------------- saisie ---------------- */
+    const pick=reactive({ emotion:null, negative:'none', date:ymd(yesterday()) });
+    function loadPickFor(dateStr){ pick.date=dateStr; const e=state.entries[dateStr]; pick.emotion=e?e.emotion:null; pick.negative=e?(e.negative||'none'):'none'; }
+    const alreadyDone=computed(()=> !!state.entries[pick.date]);
+    const canSave=computed(()=> !!pick.emotion && !state.authBusy);
+    function chooseEmotion(id){ pick.emotion = pick.emotion===id?null:id; }
+    function chooseNegative(id){ pick.negative=id; }
+    async function saveEntry(){
+      if(!pick.emotion) return;
+      const row={ user_id:state.profile.id, entry_date:pick.date, emotion:pick.emotion, negative: pick.negative==='none'?null:pick.negative };
+      const { error } = await sb.from('entries').upsert(row,{ onConflict:'user_id,entry_date' });
+      if(error){ flash('Erreur : '+error.message); return; }
+      state.entries[pick.date]={ emotion:row.emotion, negative:row.negative, at:Date.now() };
+      flash(`Ressenti du ${relativeDay(pick.date)} enregistré`, emoById[pick.emotion].color);
+    }
+    const pickPreview=computed(()=> pick.emotion?{ emo:emoById[pick.emotion], neg: pick.negative==='none'?null:negById[pick.negative] }:null);
+    const minDate=computed(()=> state.profile?state.profile.created_at.slice(0,10):ymd(today()));
+    const maxDate=computed(()=> ymd(yesterday()));
+
+    /* ---------------- profil affiché ---------------- */
+    const activeProfile=computed(()=> state.profileView?state.profileView.profile:state.profile);
+    const activeEntries=computed(()=> state.profileView?state.profileView.entries:state.entries);
+    const isSelf=computed(()=> !state.profileView || state.profileView.profile.id===state.profile?.id);
+    const calendar=computed(()=> buildCalendar(activeEntries.value||{}));
+    const stats=computed(()=> buildStats(activeEntries.value||{}));
+    const recentEntries=computed(()=>{ const e=activeEntries.value||{}; return Object.keys(e).sort().reverse().slice(0,6).map(k=>({ date:k, emo:emoById[e[k].emotion], neg:e[k].negative?negById[e[k].negative]:null })); });
+    const canSeeEntries=computed(()=> isSelf.value || state.friends.some(f=>f.profile.id===activeProfile.value?.id));
+
+    async function openProfile(p){
+      let prof = typeof p==='string' ? (await sb.from('profiles').select('*').eq('id',p).maybeSingle()).data : p;
+      if(!prof) return;
+      const entries = await fetchEntries(prof.id);
+      state.profileView={ profile:prof, entries }; state.view='profile';
+    }
+    function relationTo(id){
+      if(!state.profile) return 'none';
+      if(id===state.profile.id) return 'self';
+      if(state.friends.some(f=>f.profile.id===id)) return 'friend';
+      if(state.outgoing.some(f=>f.profile.id===id)) return 'pending';
+      const inc=state.incoming.find(f=>f.profile.id===id); if(inc) return 'incoming';
+      return 'none';
+    }
+    function incomingFid(id){ const inc=state.incoming.find(f=>f.profile.id===id); return inc?inc.fid:null; }
+
+    /* ---------------- amis ---------------- */
+    const friendQuery=ref(''); const friendError=ref('');
+    async function sendRequestToId(targetId){
+      const uid=state.profile.id;
+      const { data:ex } = await sb.from('friendships').select('*')
+        .or(`and(requester_id.eq.${uid},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${uid})`).maybeSingle();
+      if(ex){
+        if(ex.status==='accepted'){ friendError.value='Vous êtes déjà amis.'; return; }
+        if(ex.addressee_id===uid){ await acceptById(ex.id); return; }
+        friendError.value='Demande déjà envoyée.'; return;
+      }
+      const { error } = await sb.from('friendships').insert({ requester_id:uid, addressee_id:targetId });
+      if(error){ friendError.value="Impossible d'envoyer la demande."; return; }
+      await loadFriendGraph(); flash('Demande envoyée');
+    }
+    async function sendRequest(){
+      friendError.value=''; const uname=friendQuery.value.trim().toLowerCase(); if(!uname) return;
+      if(uname===state.profile.username){ friendError.value="Vous ne pouvez pas vous ajouter vous-même."; return; }
+      const { data:target } = await sb.from('profiles').select('*').eq('username',uname).maybeSingle();
+      if(!target){ friendError.value="Aucun compte avec cet identifiant."; return; }
+      await sendRequestToId(target.id); friendQuery.value='';
+    }
+    async function requestFromProfile(id){ await sendRequestToId(id); }
+    async function acceptById(fid){ const { error }=await sb.from('friendships').update({ status:'accepted' }).eq('id',fid); if(!error){ await loadFriendGraph(); flash('Vous êtes désormais amis'); } }
+    async function deleteById(fid,msg){ const { error }=await sb.from('friendships').delete().eq('id',fid); if(!error){ await loadFriendGraph(); if(msg) flash(msg); } }
+
+    /* ---------------- navigation ---------------- */
+    function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
+
+    onMounted(async ()=>{
+      if(!CONFIGURED){ state.ready=true; return; }
+      sb.auth.onAuthStateChange((_e,session)=>{ handleSession(session); });
+      const { data } = await sb.auth.getSession();
+      await handleSession(data.session);
+      state.ready=true;
+    });
+
+    return {
+      state, toast, EMOTIONS, NEGATIVES, AVATARS, emoById, negById,
+      authMode, authForm, authError, authNotice, switchAuth, doRegister, doLogin, logout,
+      pick, alreadyDone, canSave, chooseEmotion, chooseNegative, saveEntry, pickPreview, loadPickFor, minDate, maxDate,
+      activeProfile, activeEntries, isSelf, calendar, stats, recentEntries, canSeeEntries, openProfile, relationTo, incomingFid,
+      friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
+      go, relativeDay, longDate, ymd, yesterday,
+    };
+  },
+  template: `
+<div v-if="!state.configured" class="center-screen">
+  <div class="card setup">
+    <h2>Presque prêt ✦</h2>
+    <p>Cette application a besoin d'un projet Supabase (gratuit) pour stocker les comptes et les ressentis. Trois étapes :</p>
+    <ol>
+      <li>Créez un projet sur <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>, puis dans <b>SQL Editor</b> exécutez le fichier <code>veille_supabase.sql</code> fourni.</li>
+      <li>Dans <b>Project Settings → API</b>, copiez « Project URL » et la clé <b>anon</b>.</li>
+      <li>Collez-les en haut de ce fichier, à la place des valeurs d'exemple :</li>
+    </ol>
+    <div class="code-block"><span class="k">const</span> SUPABASE_URL      = <span class="s">'https://xxxx.supabase.co'</span>;
+<span class="k">const</span> SUPABASE_ANON_KEY = <span class="s">'eyJhbGci...'</span>;</div>
+    <p style="margin-top:14px">Rechargez ensuite la page. La clé anon est faite pour être publique : ce sont les règles RLS du script SQL qui protègent les données.</p>
+  </div>
+</div>
+
+<div v-else-if="!state.ready" class="center-screen"><div class="spinner"></div></div>
+
+<div v-else-if="!state.profile" class="auth-wrap">
+  <aside class="auth-aside">
+    <svg class="stars" viewBox="0 0 400 600" preserveAspectRatio="none" aria-hidden="true"><g fill="#fff">
+      <circle cx="60" cy="80" r="1.5"/><circle cx="140" cy="150" r="1"/><circle cx="300" cy="60" r="2"/><circle cx="350" cy="200" r="1.2"/><circle cx="90" cy="300" r="1.6"/><circle cx="250" cy="360" r="1"/><circle cx="180" cy="460" r="1.4"/><circle cx="330" cy="500" r="1"/><circle cx="50" cy="520" r="1.8"/><circle cx="210" cy="90" r="1"/><circle cx="120" cy="560" r="1.3"/>
+    </g></svg>
+    <div class="kicker">journal d'humeurs</div>
+    <div>
+      <h1>Chaque soir,<br>une <em>couleur</em><br>pour la veille.</h1>
+      <p style="margin-top:18px">Deux emojis suffisent : l'émotion qui reste de la journée passée, et — si besoin — ce qui a pesé. Regardez votre année se peindre, et suivez celle de vos proches.</p>
+    </div>
+    <div class="aside-strip"><i v-for="e in EMOTIONS" :key="e.id" :style="{background:e.color}" :title="e.label"></i></div>
+  </aside>
+
+  <div class="auth-form-side">
+    <div class="card auth-card">
+      <template v-if="authMode.v==='login'">
+        <h2>Content de vous revoir</h2>
+        <p class="sub">Connectez-vous pour noter la veille.</p>
+        <div v-if="authNotice" class="notice">{{ authNotice }}</div>
+        <div v-if="authError" class="err">{{ authError }}</div>
+        <div class="field"><label>Email</label><input v-model="authForm.email" @keyup.enter="doLogin" type="email" autocomplete="email" placeholder="vous@exemple.com"></div>
+        <div class="field"><label>Mot de passe</label><input v-model="authForm.password" @keyup.enter="doLogin" type="password" autocomplete="current-password"></div>
+        <button class="btn brand" :disabled="state.authBusy" @click="doLogin">{{ state.authBusy?'…':'Se connecter' }}</button>
+        <div class="switch">Pas encore de compte ? <button @click="switchAuth('register')">Créer un compte</button></div>
+      </template>
+      <template v-else>
+        <h2>Créer votre compte</h2>
+        <p class="sub">Un avatar, un identifiant, et c'est parti.</p>
+        <div v-if="authError" class="err">{{ authError }}</div>
+        <div class="field"><label>Avatar</label>
+          <div class="avatar-pick"><button v-for="a in AVATARS" :key="a" :class="{on:authForm.avatar===a}" @click="authForm.avatar=a">{{ a }}</button></div>
+        </div>
+        <div class="field"><label>Nom affiché</label><input v-model="authForm.displayName" placeholder="Léa Martin"></div>
+        <div class="field"><label>Identifiant <span style="color:var(--faint);font-weight:400">(unique, pour vous ajouter)</span></label><input v-model="authForm.username" placeholder="lea" autocomplete="username"></div>
+        <div class="field"><label>Email</label><input v-model="authForm.email" type="email" autocomplete="email" placeholder="vous@exemple.com"></div>
+        <div class="field"><label>Mot de passe <span style="color:var(--faint);font-weight:400">(6+ caractères)</span></label><input v-model="authForm.password" @keyup.enter="doRegister" type="password" autocomplete="new-password"></div>
+        <button class="btn brand" :disabled="state.authBusy" @click="doRegister">{{ state.authBusy?'…':'Créer le compte' }}</button>
+        <div class="switch">Déjà inscrit ? <button @click="switchAuth('login')">Se connecter</button></div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<div v-else class="app">
+  <header class="topbar">
+    <div class="brand"><span class="moon"></span> Veille</div>
+    <nav class="nav">
+      <button :class="{active:state.view==='checkin'}" @click="go('checkin')">Noter la veille</button>
+      <button :class="{active:state.view==='profile' && isSelf}" @click="go('profile')">Mon profil</button>
+      <button :class="{active:state.view==='friends'}" @click="go('friends')">Amis<span v-if="state.incoming.length" class="badge">{{ state.incoming.length }}</span></button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="whoami"><span class="av">{{ state.profile.avatar }}</span><span class="nm">{{ state.profile.display_name }}</span><button class="ghost" @click="logout">Déconnexion</button></div>
+  </header>
+
+  <main>
+    <section v-if="state.view==='checkin'">
+      <div class="page-head">
+        <div class="eyebrow">Ressenti du jour</div>
+        <h1>Comment s'est passée <em>{{ relativeDay(pick.date) }}</em> ?</h1>
+        <p class="lead">Une seule émotion résume la journée. Ajoutez un point négatif seulement s'il y en a eu un — sinon, laissez « Rien à signaler ».</p>
+      </div>
+      <div class="card checkin">
+        <div class="row"><h3>L'émotion générale</h3><span class="date-note">Vous notez <b>{{ relativeDay(pick.date) }}</b> · {{ longDate(pick.date) }}</span></div>
+        <div class="emo-grid">
+          <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{background:e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
+            <span class="dot" :style="{background:e.color}"></span><span class="e">{{ e.emoji }}</span><span class="l">{{ e.label }}</span>
+          </button>
+        </div>
+        <div class="row" style="margin-top:26px"><h3>Un point négatif ?<span class="opt">optionnel</span></h3></div>
+        <div class="neg emo-grid">
+          <button class="neg-none" :class="{on:pick.negative==='none'}" @click="chooseNegative('none')" style="grid-column:span 4">✨ Rien à signaler — la journée était nette</button>
+          <button v-for="n in NEGATIVES" :key="n.id" class="emo" :class="{on:pick.negative===n.id}" :style="pick.negative===n.id?{background:'#3A3450'}:{}" @click="chooseNegative(n.id)" :aria-pressed="pick.negative===n.id" :aria-label="n.label">
+            <span class="e">{{ n.emoji }}</span><span class="l">{{ n.label }}</span>
+          </button>
+        </div>
+        <div class="checkin-foot">
+          <button class="btn brand" :disabled="!canSave" @click="saveEntry">{{ alreadyDone?'Mettre à jour':'Enregistrer' }}</button>
+          <div v-if="pickPreview" class="preview"><span>Aperçu :</span>
+            <span class="chip" :style="{background:pickPreview.emo.color}">{{ pickPreview.emo.emoji }} {{ pickPreview.emo.label }}</span>
+            <span v-if="pickPreview.neg" class="chip" style="background:#3A3450">{{ pickPreview.neg.emoji }} {{ pickPreview.neg.label }}</span>
+          </div>
+          <div v-if="alreadyDone && !pickPreview" class="saved-flag">✓ Déjà noté</div>
+        </div>
+        <details class="backfill">
+          <summary>J'ai oublié un jour précédent</summary>
+          <div class="bf-body"><span>Choisir la date :</span>
+            <input type="date" :min="minDate" :max="maxDate" :value="pick.date" @change="loadPickFor($event.target.value)">
+            <span v-if="pick.date!==ymd(yesterday())" style="color:var(--brand);font-weight:600">→ édition du {{ longDate(pick.date) }}</span>
+          </div>
+        </details>
+      </div>
+
+      <div class="card feed" v-if="state.feed.length">
+        <h3>Dernières nouvelles de vos amis</h3>
+        <p class="muted-line">Ce que vos proches ont ressenti récemment.</p>
+        <div v-for="(f,i) in state.feed" :key="i" class="feed-item">
+          <button class="feed-av" @click="openProfile(f.user)">{{ f.user.avatar }}</button>
+          <div class="feed-main"><div class="nm"><button @click="openProfile(f.user)">{{ f.user.display_name }}</button></div><div class="meta">a noté {{ relativeDay(f.date) }}</div></div>
+          <div class="feed-emos"><span class="swatch" :style="{background:f.emo.color}"></span><span class="big">{{ f.emo.emoji }}</span><span v-if="f.neg" class="big" :title="f.neg.label">{{ f.neg.emoji }}</span></div>
+        </div>
+      </div>
+      <div class="card feed" v-else>
+        <h3>Le fil de vos amis apparaîtra ici</h3>
+        <p class="muted-line" style="margin-bottom:0">Ajoutez des amis depuis l'onglet <b>Amis</b> pour suivre leurs humeurs.</p>
+      </div>
+    </section>
+
+    <section v-else-if="state.view==='profile' && activeProfile">
+      <div class="profile-hero">
+        <div class="hero-band"><div class="aura" :style="{background: stats.top?stats.top.color:'#fff'}"></div></div>
+        <div class="hero-body">
+          <div class="hero-av">{{ activeProfile.avatar }}</div>
+          <div class="hero-id"><h1>{{ activeProfile.display_name }}</h1><div class="handle">@{{ activeProfile.username }} · depuis {{ longDate(activeProfile.created_at.slice(0,10)) }}</div></div>
+          <div class="hero-actions">
+            <button v-if="relationTo(activeProfile.id)==='none'" class="btn brand" @click="requestFromProfile(activeProfile.id)">Ajouter en ami</button>
+            <button v-else-if="relationTo(activeProfile.id)==='pending'" class="btn" style="background:var(--surface-2);color:var(--muted);border:1px solid var(--line)" disabled>Demande envoyée</button>
+            <button v-else-if="relationTo(activeProfile.id)==='incoming'" class="btn brand" @click="acceptById(incomingFid(activeProfile.id))">Accepter la demande</button>
+            <button v-else-if="relationTo(activeProfile.id)==='friend'" class="btn" style="background:var(--surface-2);color:var(--ink);border:1px solid var(--line)">✓ Amis</button>
+          </div>
+        </div>
+      </div>
+
+      <template v-if="canSeeEntries">
+        <div class="stats">
+          <div class="stat"><div class="n">{{ stats.total }}</div><div class="k">JOURS NOTÉS</div></div>
+          <div class="stat"><div class="n">🔥 {{ stats.streak }}</div><div class="k">SÉRIE EN COURS (JOURS)</div></div>
+          <div class="stat"><div class="n" v-if="stats.top"><span>{{ stats.top.emoji }}</span></div><div class="n" v-else style="color:var(--faint)">—</div><div class="k">HUMEUR DOMINANTE{{ stats.top?' · '+stats.top.label.toUpperCase():'' }}</div></div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-head"><h3>Une année en humeurs</h3><span style="font-size:13px;color:var(--muted)">Survolez une case pour le détail</span></div>
+          <div class="cal-scroll">
+            <div class="cal">
+              <div class="daylabels" style="grid-row:2"><span></span><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span></div>
+              <div class="months"><span v-for="m in calendar.monthMarks" :key="m.i" :style="{left:(m.i*16)+'px'}">{{ m.label }}</span></div>
+              <div class="grid" style="grid-column:2">
+                <template v-for="(wk,wi) in calendar.weeks" :key="wi">
+                  <div v-for="(cell,ci) in wk" :key="ci" class="cell" :class="{filled:cell.entry,'empty-future':cell.future}" :style="cell.color?{background:cell.color}:{}">
+                    <div v-if="!cell.future" class="tip">
+                      <template v-if="cell.entry">
+                        <div class="t-emos">{{ emoById[cell.entry.emotion].emoji }}<span v-if="cell.entry.negative"> {{ negById[cell.entry.negative].emoji }}</span></div>
+                        <div>{{ emoById[cell.entry.emotion].label }}<span v-if="cell.entry.negative"> · {{ negById[cell.entry.negative].label }}</span></div>
+                        <div style="opacity:.7">{{ longDate(cell.date) }}</div>
+                      </template>
+                      <template v-else><div style="opacity:.8">Rien noté</div><div style="opacity:.6">{{ longDate(cell.date) }}</div></template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="legend"><span style="font-weight:600;color:var(--ink)">Légende</span><div class="items"><span v-for="e in EMOTIONS" :key="e.id" class="li"><span class="sw" :style="{background:e.color}"></span>{{ e.label }}</span></div></div>
+        </div>
+        <div class="card recent" v-if="recentEntries.length">
+          <h3 style="margin-bottom:12px">Derniers ressentis</h3>
+          <div v-for="r in recentEntries" :key="r.date" class="recent-item">
+            <div class="r-emos">{{ r.emo.emoji }}<span v-if="r.neg"> {{ r.neg.emoji }}</span></div>
+            <div><div class="r-date">{{ longDate(r.date) }}</div><div class="r-tags">{{ r.emo.label }}<span v-if="r.neg"> · point négatif : {{ r.neg.label }}</span></div></div>
+          </div>
+        </div>
+        <div class="empty" v-else><div class="big">🌘</div><div v-if="isSelf">Vous n'avez encore rien noté. Rendez-vous dans « Noter la veille ».</div><div v-else>{{ activeProfile.display_name }} n'a pas encore partagé de ressenti.</div></div>
+      </template>
+      <div v-else class="private-note">🔒 Ajoutez {{ activeProfile.display_name }} en ami pour voir son activité.</div>
+    </section>
+
+    <section v-else-if="state.view==='friends'">
+      <div class="page-head"><div class="eyebrow">Votre cercle</div><h1>Amis</h1><p class="lead">Ajoutez vos proches par leur identifiant pour suivre leurs humeurs et consulter leur profil.</p></div>
+      <div class="card">
+        <div v-if="friendError" class="err">{{ friendError }}</div>
+        <div class="fr-add"><input v-model="friendQuery" @keyup.enter="sendRequest" placeholder="Identifiant de la personne (ex : lea)"><button class="btn brand" @click="sendRequest">Envoyer la demande</button></div>
+        <p class="fr-hint">Pour tester : créez un second compte sur un autre appareil ou navigateur, puis ajoutez-le ici via son <code>identifiant</code>.</p>
+
+        <div v-if="state.incoming.length">
+          <div class="section-title">Demandes reçues</div>
+          <div v-for="f in state.incoming" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="acceptById(f.fid)">Accepter</button><button class="mini" @click="deleteById(f.fid)">Refuser</button></div></div>
+        </div>
+        <div v-if="state.outgoing.length">
+          <div class="section-title">Demandes envoyées</div>
+          <div v-for="f in state.outgoing" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><span class="hd">En attente</span><button class="mini" @click="deleteById(f.fid)">Annuler</button></div></div>
+        </div>
+
+        <div class="section-title">Mes amis <span v-if="state.friends.length" style="color:var(--faint)">· {{ state.friends.length }}</span></div>
+        <div v-if="!state.friends.length" class="empty" style="padding:24px"><div class="big">👋</div>Pas encore d'amis. Envoyez une première demande ci-dessus.</div>
+        <div v-for="f in state.friends" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="openProfile(f.profile)">Voir le profil</button><button class="mini warn" @click="deleteById(f.fid,'Ami retiré')">Retirer</button></div></div>
+      </div>
+    </section>
+  </main>
+
+  <transition name="pop"><div v-if="toast.show" class="toast"><span v-if="toast.color" class="sw" :style="{background:toast.color}"></span>{{ toast.msg }}</div></transition>
+</div>
+`
+}).mount('#app');
+</script>
+</body>
+</html>
