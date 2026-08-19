@@ -222,6 +222,46 @@
 
   .empty{ text-align:center; padding:40px 20px; color:var(--muted); }
   .empty .big{ font-size:34px; margin-bottom:10px; }
+  /* météo du cercle */
+  .weather-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .weather-head h3{ font-size:18px; }
+  .weather-orb{ width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font-size:26px; flex:none; box-shadow:0 8px 20px -8px rgba(0,0,0,.4); }
+  .weather-bar{ display:flex; height:14px; border-radius:8px; overflow:hidden; gap:2px; background:var(--surface-2); }
+  .weather-bar span{ min-width:6px; }
+  .weather-sum{ font-size:14px; color:var(--muted); margin:12px 0 0; }
+  .weather-sum b{ font-weight:700; }
+
+  /* résonance */
+  .reso-line{ display:flex; align-items:center; gap:12px; font-size:14.5px; color:var(--ink); padding:6px 0; }
+  .reso-line + .reso-line{ border-top:1px solid var(--line-2); }
+  .reso-emo{ width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:20px; flex:none; box-shadow:0 6px 16px -8px rgba(0,0,0,.35); }
+
+  /* bilan mensuel */
+  .recap-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .recap-head h3{ font-size:20px; }
+  .recap-nav{ display:flex; gap:6px; }
+  .recap-nav .mini{ width:38px; padding:8px 0; text-align:center; font-size:18px; line-height:1; }
+  .recap-nav .mini:disabled{ opacity:.35; cursor:not-allowed; }
+  .recap-poster{ background:var(--dusk); border-radius:16px; padding:26px 24px; color:#fff; overflow:hidden; }
+  .rp-top{ display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+  .rp-brand{ display:flex; align-items:center; gap:7px; font-family:'Fraunces',serif; font-weight:600; font-size:16px; }
+  .rp-moon{ width:16px; height:16px; border-radius:50%; background:radial-gradient(circle at 65% 35%, #fff, rgba(255,255,255,.4)); }
+  .rp-month{ color:rgba(255,255,255,.75); }
+  .rp-hero{ display:flex; align-items:center; gap:16px; margin:20px 0 22px; }
+  .rp-emoji{ font-size:56px; line-height:1; }
+  .rp-title{ font-family:'Fraunces',serif; font-size:26px; line-height:1.1; font-weight:500; }
+  .rp-title em{ font-style:italic; }
+  .rp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .rp-cell{ aspect-ratio:1; border-radius:5px; background:rgba(255,255,255,.16); }
+  .rp-pad{ aspect-ratio:1; }
+  .rp-stats{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:20px; font-size:14px; }
+  .rp-stats span{ color:rgba(255,255,255,.92); font-weight:500; }
+  .rp-stats span:nth-child(2){ color:rgba(255,255,255,.72); }
+  .recap-actions{ display:flex; gap:12px; margin-top:16px; }
+  .recap-actions .btn{ margin:0; width:auto; padding:12px 20px; }
+  .recap-actions .grow{ flex:1; }
+  .recap-note{ font-size:12px; color:var(--faint); margin:12px 0 0; }
+
   .private-note{ text-align:center; padding:30px 20px; color:var(--muted); background:var(--surface-2); border:1px dashed var(--line); border-radius:var(--radius-sm); }
 
   .toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:500; box-shadow:var(--shadow-lg); z-index:60; display:flex; align-items:center; gap:8px; }
@@ -316,6 +356,7 @@ function today(){ return new Date(); }
 function yesterday(){ const d=new Date(); d.setDate(d.getDate()-1); return d; }
 function parseYmd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
 const MONTHS_FR=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const MONTHS_FR_FULL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 function longDate(s){ const d=parseYmd(s); return `${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`; }
 function relativeDay(s){ const t=ymd(today()),y=ymd(yesterday()); return s===t?"aujourd'hui":s===y?'hier':longDate(s); }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
@@ -352,8 +393,9 @@ createApp({
     const state = reactive({
       configured:CONFIGURED, ready:false, authBusy:false,
       session:null, profile:null,
-      entries:{}, friends:[], incoming:[], outgoing:[], feed:[],
+      entries:{}, friends:[], incoming:[], outgoing:[], feed:[], friendDays:[],
       view:'checkin', profileView:null, selCell:null, step:1,
+      recapY: today().getFullYear(), recapM: today().getMonth(),
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
@@ -427,9 +469,13 @@ createApp({
       state.friends=friends; state.incoming=incoming; state.outgoing=outgoing;
       const ids=friends.map(f=>f.profile.id);
       if(ids.length){
-        const { data:fe } = await sb.from('entries').select('*').in('user_id',ids).order('created_at',{ascending:false}).limit(10);
-        state.feed=(fe||[]).map(r=>({ user:pmap[r.user_id], date:r.entry_date, emo:emoById[r.emotion], neg:r.negative?negById[r.negative]:null }));
-      } else state.feed=[];
+        const since=(()=>{ const d=new Date(); d.setDate(d.getDate()-45); return ymd(d); })();
+        const { data:fe } = await sb.from('entries').select('user_id,entry_date,emotion,negative,created_at').in('user_id',ids).gte('entry_date',since);
+        const rows=fe||[];
+        state.feed = rows.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)).slice(0,10)
+          .map(r=>({ user:pmap[r.user_id], date:r.entry_date, emo:emoById[r.emotion], neg:r.negative?negById[r.negative]:null }));
+        state.friendDays = rows.map(r=>({ profile:pmap[r.user_id], date:r.entry_date, emotion:r.emotion, negative:r.negative }));
+      } else { state.feed=[]; state.friendDays=[]; }
     }
     async function refreshMe(){
       const uid=state.session.user.id;
@@ -524,6 +570,127 @@ createApp({
     /* ---------------- navigation ---------------- */
     function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; scrollCalRight(); } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
 
+    /* ---------------- résonance : même émotion qu'un ami, hier ---------------- */
+    const resonances = computed(()=>{
+      const day = ymd(yesterday());
+      const mine = state.entries[day]; if(!mine) return [];
+      return state.friendDays
+        .filter(fd => fd.date===day && fd.emotion===mine.emotion)
+        .map(fd => ({ profile:fd.profile, emo:emoById[mine.emotion] }));
+    });
+
+    /* ---------------- météo du cercle : humeur agrégée d'hier ---------------- */
+    const circleWeather = computed(()=>{
+      const day = ymd(yesterday());
+      const people = [];
+      if(state.entries[day]) people.push({ emotion:state.entries[day].emotion });
+      state.friendDays.filter(fd=>fd.date===day).forEach(fd=> people.push({ emotion:fd.emotion }));
+      if(!people.length) return null;
+      const tally={}; people.forEach(p=> tally[p.emotion]=(tally[p.emotion]||0)+1);
+      let domId=null,domN=0; EMOTIONS.forEach(e=>{ if((tally[e.id]||0)>domN){ domN=tally[e.id]; domId=e.id; } });
+      const segments = EMOTIONS.filter(e=>tally[e.id]).map(e=>({ color:e.color, count:tally[e.id], label:e.label }));
+      return { day, count:people.length, dominant:emoById[domId], segments };
+    });
+
+    /* ---------------- bilan mensuel ---------------- */
+    const monthRecap = computed(()=>{
+      const y=state.recapY, m=state.recapM, entries=state.entries;
+      const daysInMonth=new Date(y,m+1,0).getDate();
+      const firstWeekday=(new Date(y,m,1).getDay()+6)%7;
+      const yStr=ymd(yesterday());
+      const cells=[]; const tally={}, negTally={}; let logged=0;
+      for(let d=1; d<=daysInMonth; d++){
+        const s=ymd(new Date(y,m,d)); const e=entries[s];
+        cells.push({ day:d, color:e?emoById[e.emotion].color:null, future: s>yStr });
+        if(e){ logged++; tally[e.emotion]=(tally[e.emotion]||0)+1; if(e.negative) negTally[e.negative]=(negTally[e.negative]||0)+1; }
+      }
+      let domId=null,domN=0; EMOTIONS.forEach(e=>{ if((tally[e.id]||0)>domN){ domN=tally[e.id]; domId=e.id; } });
+      let negId=null,negN=0; for(const id in negTally){ if(negTally[id]>negN){ negN=negTally[id]; negId=id; } }
+      return {
+        y, m, monthName:MONTHS_FR_FULL[m], firstWeekday, cells, logged,
+        dominant: domId?emoById[domId]:null,
+        topNegative: negId?negById[negId]:null,
+        distribution: EMOTIONS.filter(e=>tally[e.id]).map(e=>({ ...e, count:tally[e.id] })),
+      };
+    });
+    function canRecapPrev(){ const cr=state.profile?parseYmd(state.profile.created_at.slice(0,10)):new Date(); return new Date(state.recapY,state.recapM,1) > new Date(cr.getFullYear(),cr.getMonth(),1); }
+    function canRecapNext(){ const n=new Date(); return new Date(state.recapY,state.recapM,1) < new Date(n.getFullYear(),n.getMonth(),1); }
+    function recapPrev(){ if(!canRecapPrev())return; let m=state.recapM-1,y=state.recapY; if(m<0){m=11;y--;} state.recapM=m; state.recapY=y; }
+    function recapNext(){ if(!canRecapNext())return; let m=state.recapM+1,y=state.recapY; if(m>11){m=0;y++;} state.recapM=m; state.recapY=y; }
+
+    /* ---- génération de l'image partageable (canvas) ---- */
+    function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    async function drawRecap(){
+      const r=monthRecap.value; const W=1080,H=1080;
+      const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+      const ctx=cv.getContext('2d');
+      try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+      const g=ctx.createLinearGradient(0,0,W,H);
+      g.addColorStop(0,'#4B3F86'); g.addColorStop(.4,'#6B5AB8'); g.addColorStop(.72,'#C98BB0'); g.addColorStop(1,'#EE9E5E');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      const pad=90;
+      ctx.textBaseline='alphabetic';
+      // en-tête
+      ctx.fillStyle='rgba(255,255,255,.9)'; ctx.font='600 34px Inter, sans-serif';
+      ctx.textAlign='left'; ctx.fillText('🌙 Veille', pad, pad+20);
+      ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,.75)';
+      ctx.fillText(`${r.monthName} ${r.y}`, W-pad, pad+20);
+      ctx.textAlign='left';
+      // héros
+      if(r.dominant){
+        ctx.font='150px "Inter", sans-serif'; ctx.fillText(r.dominant.emoji, pad-6, pad+230);
+        ctx.fillStyle='#fff'; ctx.font='500 66px "Fraunces", Georgia, serif';
+        ctx.fillText('Un mois plutôt', pad, pad+330);
+        ctx.font='italic 500 66px "Fraunces", Georgia, serif';
+        ctx.fillText(r.dominant.label.toLowerCase(), pad, pad+405);
+      } else {
+        ctx.fillStyle='#fff'; ctx.font='500 60px "Fraunces", Georgia, serif';
+        ctx.fillText('Un mois sans note', pad, pad+300);
+      }
+      // grille du mois
+      const cols=7, gap=12, cell=56;
+      const gridW=cols*cell+(cols-1)*gap;
+      const x0=(W-gridW)/2, y0=pad+470;
+      let idx=r.firstWeekday;
+      r.cells.forEach(c=>{
+        const col=idx%7, row=Math.floor(idx/7);
+        const x=x0+col*(cell+gap), y=y0+row*(cell+gap);
+        ctx.fillStyle = c.color ? c.color : 'rgba(255,255,255,.16)';
+        roundRect(ctx,x,y,cell,cell,12); ctx.fill();
+        idx++;
+      });
+      // stats bas
+      ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='600 40px Inter, sans-serif';
+      ctx.fillText(`${r.logged} jour${r.logged>1?'s':''} noté${r.logged>1?'s':''}`, W/2, H-140);
+      if(r.topNegative){ ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='400 30px Inter, sans-serif';
+        ctx.fillText(`point sensible : ${r.topNegative.emoji} ${r.topNegative.label.toLowerCase()}`, W/2, H-90); }
+      ctx.textAlign='left';
+      return await new Promise(res=> cv.toBlob(b=>res(b),'image/png'));
+    }
+    function recapShareText(){
+      const r=monthRecap.value;
+      const dom = r.dominant ? `${r.dominant.emoji} ${r.dominant.label.toLowerCase()} en dominante, ` : '';
+      return `Mon mois de ${r.monthName} sur Veille : ${dom}${r.logged} jour${r.logged>1?'s':''} noté${r.logged>1?'s':''}. 🌙`;
+    }
+    async function shareRecap(){
+      try{
+        const blob=await drawRecap();
+        const file=new File([blob],`veille-${monthRecap.value.monthName}.png`,{type:'image/png'});
+        const text=recapShareText();
+        if(navigator.canShare && navigator.canShare({ files:[file] })){
+          await navigator.share({ files:[file], text });
+        } else {
+          const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=file.name; a.click(); URL.revokeObjectURL(url);
+          window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank');
+          flash('Image téléchargée — joignez-la à votre post');
+        }
+      }catch(e){ flash('Partage impossible sur cet appareil'); }
+    }
+    async function downloadRecap(){
+      try{ const blob=await drawRecap(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`veille-${monthRecap.value.monthName}.png`; a.click(); URL.revokeObjectURL(url); }
+      catch(e){ flash('Génération impossible'); }
+    }
+
     onMounted(async ()=>{
       if(!CONFIGURED){ state.ready=true; return; }
       sb.auth.onAuthStateChange((_e,session)=>{ handleSession(session); });
@@ -539,6 +706,7 @@ createApp({
       activeProfile, activeEntries, isSelf, calendar, stats, recentEntries, canSeeEntries, openProfile, relationTo, incomingFid,
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
       go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
+      resonances, circleWeather, monthRecap, canRecapPrev, canRecapNext, recapPrev, recapNext, shareRecap, downloadRecap,
     };
   },
   template: `
@@ -673,6 +841,25 @@ createApp({
         </transition>
       </div>
 
+      <!-- Météo du cercle -->
+      <div class="card weather" v-if="state.friends.length && circleWeather">
+        <div class="weather-head">
+          <div><div class="eyebrow">Météo du cercle</div><h3>Le ciel de votre cercle, hier</h3></div>
+          <div class="weather-orb" :style="{background:circleWeather.dominant.color}">{{ circleWeather.dominant.emoji }}</div>
+        </div>
+        <div class="weather-bar"><span v-for="(s,i) in circleWeather.segments" :key="i" :style="{background:s.color, flex:s.count}" :title="s.label"></span></div>
+        <p class="weather-sum">{{ circleWeather.count }} membre{{ circleWeather.count>1?'s':'' }} {{ circleWeather.count>1?'ont':'a' }} noté — dominante <b :style="{color:circleWeather.dominant.color}">{{ circleWeather.dominant.label.toLowerCase() }}</b>.</p>
+      </div>
+
+      <!-- Résonance -->
+      <div class="card reso" v-if="resonances.length">
+        <div class="eyebrow" style="margin-bottom:10px">Résonance</div>
+        <div v-for="(r,i) in resonances" :key="i" class="reso-line">
+          <span class="reso-emo" :style="{background:r.emo.color}">{{ r.emo.emoji }}</span>
+          <span>Vous et <b>{{ r.profile.display_name }}</b> avez partagé la même couleur hier — <b :style="{color:r.emo.color}">{{ r.emo.label.toLowerCase() }}</b>.</span>
+        </div>
+      </div>
+
       <div class="card feed" v-if="state.feed.length">
         <h3>Dernières nouvelles de vos amis</h3>
         <p class="muted-line">Ce que vos proches ont ressenti récemment.</p>
@@ -742,6 +929,39 @@ createApp({
           <div class="cal-detail" v-else style="color:var(--faint)">Touchez une case pour voir le détail du jour.</div>
           <div class="legend"><span style="font-weight:600;color:var(--ink)">Légende</span><div class="items"><span v-for="e in EMOTIONS" :key="e.id" class="li"><span class="sw" :style="{background:e.color}"></span>{{ e.label }}</span></div></div>
         </div>
+
+        <!-- Bilan mensuel illustré & partageable -->
+        <div class="cal-card recap" v-if="isSelf">
+          <div class="recap-head">
+            <div><div class="eyebrow">Bilan mensuel</div><h3>{{ monthRecap.monthName }} {{ monthRecap.y }}</h3></div>
+            <div class="recap-nav">
+              <button class="mini" :disabled="!canRecapPrev()" @click="recapPrev" aria-label="Mois précédent">‹</button>
+              <button class="mini" :disabled="!canRecapNext()" @click="recapNext" aria-label="Mois suivant">›</button>
+            </div>
+          </div>
+          <div class="recap-poster">
+            <div class="rp-top"><span class="rp-brand"><span class="rp-moon"></span> Veille</span><span class="rp-month">{{ monthRecap.monthName }} {{ monthRecap.y }}</span></div>
+            <div class="rp-hero">
+              <div class="rp-emoji" v-if="monthRecap.dominant">{{ monthRecap.dominant.emoji }}</div>
+              <div class="rp-title" v-if="monthRecap.dominant">Un mois plutôt<br><em>{{ monthRecap.dominant.label.toLowerCase() }}</em></div>
+              <div class="rp-title" v-else>Un mois <em>sans note</em></div>
+            </div>
+            <div class="rp-grid" :style="{'--off':monthRecap.firstWeekday}">
+              <span class="rp-pad" v-for="n in monthRecap.firstWeekday" :key="'p'+n"></span>
+              <span v-for="(c,i) in monthRecap.cells" :key="i" class="rp-cell" :class="{on:c.color}" :style="c.color?{background:c.color}:{}"></span>
+            </div>
+            <div class="rp-stats">
+              <span>{{ monthRecap.logged }} jour{{ monthRecap.logged>1?'s':'' }} noté{{ monthRecap.logged>1?'s':'' }}</span>
+              <span v-if="monthRecap.topNegative">point sensible : {{ monthRecap.topNegative.emoji }} {{ monthRecap.topNegative.label.toLowerCase() }}</span>
+            </div>
+          </div>
+          <div class="recap-actions">
+            <button class="btn brand grow" @click="shareRecap">Partager</button>
+            <button class="btn secondary" @click="downloadRecap">Télécharger l'image</button>
+          </div>
+          <p class="recap-note">Le partage ouvre le sélecteur de votre téléphone (X, messages…) avec l'image jointe. Sur ordinateur, l'image se télécharge et X s'ouvre avec le texte pré-rempli.</p>
+        </div>
+
         <div class="card recent" v-if="recentEntries.length">
           <h3 style="margin-bottom:12px">Derniers ressentis</h3>
           <div v-for="r in recentEntries" :key="r.date" class="recent-item">
