@@ -119,6 +119,24 @@
   .preview{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); }
   .preview .chip{ display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-weight:600; font-size:13px; color:#fff; }
   .saved-flag{ font-size:13px; color:#1FA971; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .wizard-head{ display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .steps-dots{ display:flex; gap:6px; }
+  .steps-dots .d{ width:28px; height:5px; border-radius:3px; background:var(--line); transition:.2s; }
+  .steps-dots .d.on{ background:var(--brand); }
+  .step-label{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .wizard-sub{ color:var(--muted); font-size:14px; margin:2px 0 16px; }
+  .wizard-foot{ display:flex; gap:12px; margin-top:22px; align-items:center; }
+  .wizard-foot .btn{ margin:0; width:auto; padding:13px 22px; }
+  .wizard-foot .grow{ flex:1; }
+  .btn.secondary{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); }
+  .btn.secondary:hover{ background:var(--surface); border-color:var(--faint); }
+  .recap-chip{ display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--surface-2); border-radius:999px; padding:5px 6px; cursor:pointer; }
+  .recap-chip:hover{ border-color:var(--faint); }
+  .recap-chip .chip{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:999px; font-weight:600; font-size:13px; color:#fff; }
+  .recap-chip .mod{ font-size:12.5px; font-weight:600; color:var(--brand); padding-right:8px; }
+  .stepfade-enter-active,.stepfade-leave-active{ transition:opacity .16s ease; }
+  .stepfade-enter-from,.stepfade-leave-to{ opacity:0; }
+
   .backfill{ margin-top:14px; font-size:13px; }
   .backfill summary{ color:var(--brand); font-weight:600; cursor:pointer; width:max-content; }
   .backfill .bf-body{ margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:var(--muted); }
@@ -149,7 +167,7 @@
   .hero-actions .btn{ width:auto; padding:10px 18px; margin:0; font-size:14px; }
 
   .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
-  @media (max-width:560px){ .stats{ grid-template-columns:1fr; } }
+  @media (max-width:560px){ .stats{ gap:8px; } .stat{ padding:12px 10px; } .stat .n{ font-size:22px; } .stat .k{ font-size:10px; letter-spacing:0; } }
   .stat{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px 18px; }
   .stat .n{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; display:flex; align-items:center; gap:8px; }
   .stat .k{ font-size:12.5px; color:var(--muted); font-weight:600; letter-spacing:.03em; margin-top:2px; }
@@ -335,7 +353,7 @@ createApp({
       configured:CONFIGURED, ready:false, authBusy:false,
       session:null, profile:null,
       entries:{}, friends:[], incoming:[], outgoing:[], feed:[],
-      view:'checkin', profileView:null, selCell:null,
+      view:'checkin', profileView:null, selCell:null, step:1,
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
@@ -431,7 +449,9 @@ createApp({
 
     /* ---------------- saisie ---------------- */
     const pick=reactive({ emotion:null, negative:'none', date:ymd(yesterday()) });
-    function loadPickFor(dateStr){ pick.date=dateStr; const e=state.entries[dateStr]; pick.emotion=e?e.emotion:null; pick.negative=e?(e.negative||'none'):'none'; }
+    function loadPickFor(dateStr){ pick.date=dateStr; const e=state.entries[dateStr]; pick.emotion=e?e.emotion:null; pick.negative=e?(e.negative||'none'):'none'; state.step=1; }
+    function nextStep(){ if(pick.emotion) state.step=2; }
+    function prevStep(){ state.step=1; }
     const alreadyDone=computed(()=> !!state.entries[pick.date]);
     const canSave=computed(()=> !!pick.emotion && !state.authBusy);
     function chooseEmotion(id){ pick.emotion = pick.emotion===id?null:id; }
@@ -442,6 +462,7 @@ createApp({
       const { error } = await sb.from('entries').upsert(row,{ onConflict:'user_id,entry_date' });
       if(error){ flash('Erreur : '+error.message); return; }
       state.entries[pick.date]={ emotion:row.emotion, negative:row.negative, at:Date.now() };
+      state.step=1;
       flash(`Ressenti du ${relativeDay(pick.date)} enregistré`, emoById[pick.emotion].color);
     }
     const pickPreview=computed(()=> pick.emotion?{ emo:emoById[pick.emotion], neg: pick.negative==='none'?null:negById[pick.negative] }:null);
@@ -514,7 +535,7 @@ createApp({
     return {
       state, toast, EMOTIONS, NEGATIVES, AVATARS, emoById, negById,
       authMode, authForm, authError, authNotice, switchAuth, doRegister, doLogin, logout,
-      pick, alreadyDone, canSave, chooseEmotion, chooseNegative, saveEntry, pickPreview, loadPickFor, minDate, maxDate,
+      pick, alreadyDone, canSave, chooseEmotion, chooseNegative, saveEntry, pickPreview, loadPickFor, minDate, maxDate, nextStep, prevStep,
       activeProfile, activeEntries, isSelf, calendar, stats, recentEntries, canSeeEntries, openProfile, relationTo, incomingFid,
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
       go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
@@ -601,34 +622,55 @@ createApp({
         <p class="lead">Une seule émotion résume la journée. Ajoutez un point négatif seulement s'il y en a eu un — sinon, laissez « Rien à signaler ».</p>
       </div>
       <div class="card checkin">
-        <div class="row"><h3>L'émotion générale</h3><span class="date-note">Vous notez <b>{{ relativeDay(pick.date) }}</b> · {{ longDate(pick.date) }}</span></div>
-        <div class="emo-grid">
-          <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{background:e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
-            <span class="dot" :style="{background:e.color}"></span><span class="e">{{ e.emoji }}</span><span class="l">{{ e.label }}</span>
-          </button>
+        <div class="wizard-head">
+          <div class="steps-dots"><span class="d" :class="{on:state.step>=1}"></span><span class="d" :class="{on:state.step>=2}"></span></div>
+          <span class="step-label">Étape {{ state.step }} sur 2 · {{ state.step===1 ? 'Émotion' : 'Point négatif' }}</span>
+          <span class="date-note" style="margin-left:auto">Vous notez <b>{{ relativeDay(pick.date) }}</b></span>
         </div>
-        <div class="row" style="margin-top:26px"><h3>Un point négatif ?<span class="opt">optionnel</span></h3></div>
-        <div class="neg emo-grid">
-          <button class="neg-none" :class="{on:pick.negative==='none'}" @click="chooseNegative('none')">✨ Rien à signaler — la journée était nette</button>
-          <button v-for="n in NEGATIVES" :key="n.id" class="emo" :class="{on:pick.negative===n.id}" :style="pick.negative===n.id?{background:'#3A3450'}:{}" @click="chooseNegative(n.id)" :aria-pressed="pick.negative===n.id" :aria-label="n.label">
-            <span class="e">{{ n.emoji }}</span><span class="l">{{ n.label }}</span>
-          </button>
-        </div>
-        <div class="checkin-foot">
-          <button class="btn brand" :disabled="!canSave" @click="saveEntry">{{ alreadyDone?'Mettre à jour':'Enregistrer' }}</button>
-          <div v-if="pickPreview" class="preview"><span>Aperçu :</span>
-            <span class="chip" :style="{background:pickPreview.emo.color}">{{ pickPreview.emo.emoji }} {{ pickPreview.emo.label }}</span>
-            <span v-if="pickPreview.neg" class="chip" style="background:#3A3450">{{ pickPreview.neg.emoji }} {{ pickPreview.neg.label }}</span>
+
+        <transition name="stepfade" mode="out-in">
+          <!-- Étape 1 : émotion générale -->
+          <div v-if="state.step===1" key="s1">
+            <div class="row"><h3>L'émotion générale de {{ relativeDay(pick.date) }}</h3></div>
+            <p class="wizard-sub">Choisissez celle qui résume le mieux la journée.</p>
+            <div class="emo-grid">
+              <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{background:e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
+                <span class="dot" :style="{background:e.color}"></span><span class="e">{{ e.emoji }}</span><span class="l">{{ e.label }}</span>
+              </button>
+            </div>
+            <div class="wizard-foot">
+              <button class="btn brand grow" :disabled="!pick.emotion" @click="nextStep">Continuer →</button>
+            </div>
+            <div v-if="alreadyDone" class="saved-flag" style="margin-top:14px">✓ Déjà noté pour {{ relativeDay(pick.date) }} — vous pouvez le modifier</div>
+            <details class="backfill">
+              <summary>J'ai oublié un jour précédent</summary>
+              <div class="bf-body"><span>Choisir la date :</span>
+                <input type="date" :min="minDate" :max="maxDate" :value="pick.date" @change="loadPickFor($event.target.value)">
+                <span v-if="pick.date!==ymd(yesterday())" style="color:var(--brand);font-weight:600">→ édition du {{ longDate(pick.date) }}</span>
+              </div>
+            </details>
           </div>
-          <div v-if="alreadyDone && !pickPreview" class="saved-flag">✓ Déjà noté</div>
-        </div>
-        <details class="backfill">
-          <summary>J'ai oublié un jour précédent</summary>
-          <div class="bf-body"><span>Choisir la date :</span>
-            <input type="date" :min="minDate" :max="maxDate" :value="pick.date" @change="loadPickFor($event.target.value)">
-            <span v-if="pick.date!==ymd(yesterday())" style="color:var(--brand);font-weight:600">→ édition du {{ longDate(pick.date) }}</span>
+
+          <!-- Étape 2 : point négatif -->
+          <div v-else key="s2">
+            <button class="recap-chip" @click="prevStep" v-if="pick.emotion">
+              <span class="chip" :style="{background:emoById[pick.emotion].color}">{{ emoById[pick.emotion].emoji }} {{ emoById[pick.emotion].label }}</span>
+              <span class="mod">Modifier</span>
+            </button>
+            <div class="row" style="margin-top:16px"><h3>Un point négatif a-t-il pesé ?<span class="opt">optionnel</span></h3></div>
+            <p class="wizard-sub">Sélectionnez ce qui a marqué la journée, ou « Rien à signaler ».</p>
+            <div class="neg emo-grid">
+              <button class="neg-none" :class="{on:pick.negative==='none'}" @click="chooseNegative('none')">✨ Rien à signaler — la journée était nette</button>
+              <button v-for="n in NEGATIVES" :key="n.id" class="emo" :class="{on:pick.negative===n.id}" :style="pick.negative===n.id?{background:'#3A3450'}:{}" @click="chooseNegative(n.id)" :aria-pressed="pick.negative===n.id" :aria-label="n.label">
+                <span class="e">{{ n.emoji }}</span><span class="l">{{ n.label }}</span>
+              </button>
+            </div>
+            <div class="wizard-foot">
+              <button class="btn secondary" @click="prevStep">← Retour</button>
+              <button class="btn brand grow" :disabled="!canSave" @click="saveEntry">{{ alreadyDone?'Mettre à jour':'Enregistrer' }}</button>
+            </div>
           </div>
-        </details>
+        </transition>
       </div>
 
       <div class="card feed" v-if="state.feed.length">
