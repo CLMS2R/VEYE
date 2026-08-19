@@ -16,7 +16,7 @@
   :root{
     --bg:#F4EFFA; --surface:#FFFFFF; --surface-2:#F6F1FB;
     --ink:#2C2540; --muted:#8A82A0; --faint:#B7AFC8; --line:#ECE5F6; --line-2:#F3EDFA;
-    --brand:#7B6FEA; --brand-ink:#5B4FCF; --brand-soft:#ECE8FE; --accent:#F6A5C6; --peach:#FBB98A; --mint:#8FD8C6; --danger:#F0788B;
+    --brand:#7B6FEA; --brand-ink:#5B4FCF; --brand-soft:#ECE8FE; --accent:#F6A5C6; --peach:#FBB98A; --mint:#8FD8C6; --danger:#F0788B; --btn-neutral:#2C2540; --pop:#2C2540;
     --radius:24px; --radius-sm:16px; --radius-xs:12px;
     --shadow:0 2px 4px rgba(80,60,120,.05), 0 14px 30px -14px rgba(90,70,140,.22);
     --shadow-lg:0 26px 60px -22px rgba(70,50,120,.4);
@@ -82,10 +82,10 @@
   .avatar-pick button{ width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--surface-2); font-size:20px; display:grid; place-items:center; }
   .avatar-pick button.on{ border-color:var(--brand); background:var(--brand-soft); box-shadow:0 0 0 3px var(--brand-soft); }
 
-  .btn{ width:100%; border:none; background:var(--ink); color:#fff; font-weight:700; font-size:15px; padding:14px; border-radius:999px; margin-top:6px; box-shadow:0 6px 0 -1px rgba(44,37,64,.18); transition:transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .12s, background .15s; }
-  .btn:hover{ background:#3a3157; transform:translateY(-1px); }
-  .btn:active{ transform:translateY(3px); box-shadow:0 2px 0 -1px rgba(44,37,64,.18); }
-  .btn.brand{ background:var(--brand); box-shadow:0 6px 0 -1px var(--brand-ink); }
+  .btn{ width:100%; border:none; background:var(--btn-neutral); color:#fff; font-weight:700; font-size:15px; padding:14px; border-radius:999px; margin-top:6px; box-shadow:0 6px 0 -1px rgba(40,30,70,.35); transition:transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .12s, background .15s; }
+  .btn:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(3px); box-shadow:0 2px 0 -1px rgba(40,30,70,.35); }
+  .btn.brand{ background:var(--brand); box-shadow:0 6px 0 -1px rgba(70,55,150,.5); }
   .btn.brand:hover{ background:var(--brand-ink); }
   .btn:disabled{ opacity:.5; cursor:not-allowed; }
   .switch{ text-align:center; font-size:14px; color:var(--muted); margin-top:16px; }
@@ -113,10 +113,12 @@
   .emo .e{ font-size:30px; line-height:1; }
   .emo .l{ font-size:12.5px; font-weight:600; color:var(--muted); }
   .emo .dot{ position:absolute; top:9px; right:9px; width:9px; height:9px; border-radius:50%; opacity:.55; }
-  .emo.on{ border-color:transparent; color:#fff; box-shadow:0 10px 22px -8px rgba(0,0,0,.4); animation:pop-emo .28s cubic-bezier(.34,1.56,.64,1); }
+  .emo.on{ box-shadow:0 10px 24px -12px rgba(0,0,0,.3); animation:pop-emo .28s cubic-bezier(.34,1.56,.64,1); }
   @keyframes pop-emo{ 0%{ transform:scale(.9); } 60%{ transform:scale(1.08) rotate(1deg); } 100%{ transform:scale(1); } }
-  .emo.on .l{ color:rgba(255,255,255,.92); }
+  .emo.on .l{ color:var(--ink); font-weight:800; }
   .emo.on .dot{ display:none; }
+  .neg .emo.on{ border-color:transparent; color:#fff; }
+  .neg .emo.on .l{ color:rgba(255,255,255,.92); }
   .neg .emo .e{ font-size:26px; }
   .neg-none{ grid-column:1 / -1; border:1.5px dashed var(--line); background:var(--surface-2); color:var(--muted); border-radius:var(--radius-sm); padding:0 16px; font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:8px; min-height:44px; }
   .neg-none.on{ border-style:solid; border-color:var(--brand); background:var(--brand-soft); color:var(--brand-ink); }
@@ -193,9 +195,9 @@
   .cell.filled{ border-color:rgba(0,0,0,.06); }
   .cell.empty-future{ background:transparent; border-color:transparent; }
   @media (hover:hover){ .cell:hover .tip{ display:block; } }
-  .tip{ display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; font-size:12px; line-height:1.4; padding:8px 10px; border-radius:8px; white-space:nowrap; z-index:5; box-shadow:var(--shadow-lg); pointer-events:none; }
+  .tip{ display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:var(--pop); color:#fff; font-size:12px; line-height:1.4; padding:8px 10px; border-radius:8px; white-space:nowrap; z-index:5; box-shadow:var(--shadow-lg); pointer-events:none; }
   .tip .t-emos{ font-size:15px; }
-  .tip:after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); }
+  .tip:after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--pop); }
   .legend{ display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
   .legend .items{ display:flex; gap:5px; flex-wrap:wrap; }
   .legend .li{ display:flex; align-items:center; gap:5px; }
@@ -232,7 +234,7 @@
   /* météo du cercle */
   .weather-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .weather-head h3{ font-size:18px; }
-  .weather-orb{ width:52px; height:52px; border-radius:50%; display:grid; place-items:center; font-size:26px; flex:none; box-shadow:0 8px 20px -8px rgba(0,0,0,.4); }
+  .weather-orb{ width:54px; height:54px; border-radius:50%; display:grid; place-items:center; flex:none; background:var(--surface-2); box-shadow:var(--shadow); }
   .weather-bar{ display:flex; height:14px; border-radius:8px; overflow:hidden; gap:2px; background:var(--surface-2); }
   .weather-bar span{ min-width:6px; }
   .weather-sum{ font-size:14px; color:var(--muted); margin:12px 0 0; }
@@ -241,7 +243,7 @@
   /* résonance */
   .reso-line{ display:flex; align-items:center; gap:12px; font-size:14.5px; color:var(--ink); padding:6px 0; }
   .reso-line + .reso-line{ border-top:1px solid var(--line-2); }
-  .reso-emo{ width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:20px; flex:none; box-shadow:0 6px 16px -8px rgba(0,0,0,.35); }
+  .reso-emo{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; flex:none; background:var(--surface-2); box-shadow:var(--shadow); }
 
   /* bilan mensuel */
   .recap-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
@@ -269,9 +271,27 @@
   .recap-actions .grow{ flex:1; }
   .recap-note{ font-size:12px; color:var(--faint); margin:12px 0 0; }
 
+  .mico{ display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; line-height:0; }
+  .mico svg{ display:block; }
+
+  /* ===== Mode nuit ===== */
+  [data-theme="dark"]{
+    --surface:#241E38; --surface-2:#2C2542;
+    --ink:#ECE7F5; --muted:#A79FC0; --faint:#6E6688; --line:#372F4E; --line-2:#302943;
+    --brand:#8B80F0; --brand-ink:#B3A9F7; --brand-soft:#332C55; --btn-neutral:#3D3560;
+    --sky:linear-gradient(180deg,#1B1630 0%,#241A33 55%,#2A1C30 100%);
+    --shadow:0 2px 6px rgba(0,0,0,.3), 0 16px 34px -16px rgba(0,0,0,.6);
+    --shadow-lg:0 26px 60px -18px rgba(0,0,0,.7);
+  }
+  [data-theme="dark"] .topbar{ background:rgba(28,22,48,.72); }
+  [data-theme="dark"] .bottomnav{ background:rgba(28,22,48,.88); }
+  [data-theme="dark"] .err{ background:#3a2230; color:#F3A6B4; border-color:#5a2f3f; }
+  [data-theme="dark"] .notice{ background:#1e3a2c; color:#8FE3B0; border-color:#2f5a45; }
+  [data-theme="dark"] .cell{ border-color:rgba(255,255,255,.06); }
+
   .private-note{ text-align:center; padding:30px 20px; color:var(--muted); background:var(--surface-2); border:1px dashed var(--line); border-radius:var(--radius-sm); }
 
-  .toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:500; box-shadow:var(--shadow-lg); z-index:60; display:flex; align-items:center; gap:8px; }
+  .toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--pop); color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:500; box-shadow:var(--shadow-lg); z-index:60; display:flex; align-items:center; gap:8px; }
   .toast .sw{ width:12px; height:12px; border-radius:50%; }
 
   .setup{ max-width:660px; }
@@ -358,6 +378,55 @@ const AVATARS = ['🦊','🐻','🦉','🐢','🦋','🐙','🦁','🐳','🌙',
 const emoById = Object.fromEntries(EMOTIONS.map(e=>[e.id,e]));
 const negById = Object.fromEntries(NEGATIVES.map(n=>[n.id,n]));
 
+/* ---------- Icônes lune (mascotte déclinée par émotion / point négatif) ---------- */
+function lum(hex){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)/255; }
+function emoMoon(id,size){
+  const c=emoById[id]||{color:'#F3C25A'}; const s=size||24;
+  const FC = lum(c.color)>0.62 ? '#4A3A16' : '#FFFFFF';
+  const faces={
+    radiant:`<g fill="none" stroke="${FC}" stroke-width="1.7" stroke-linecap="round"><path d="M9.6 15q2.2-2.5 4.4 0"/><path d="M18 15q2.2-2.5 4.4 0"/><path d="M11 18.2q5 4.6 10 0"/></g>`,
+    content:`<circle cx="12" cy="14.8" r="1.2" fill="${FC}"/><circle cx="20" cy="14.8" r="1.2" fill="${FC}"/><path d="M12 18.4q4 3 8 0" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
+    serein:`<g fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"><path d="M10 14.6q2 2 4 0"/><path d="M18 14.6q2 2 4 0"/><path d="M13 18.6q3 1.8 6 0"/></g>`,
+    neutre:`<circle cx="12" cy="14.8" r="1.2" fill="${FC}"/><circle cx="20" cy="14.8" r="1.2" fill="${FC}"/><path d="M12.8 19h6.4" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
+    mitige:`<circle cx="12" cy="14.6" r="1.2" fill="${FC}"/><circle cx="20" cy="14.6" r="1.2" fill="${FC}"/><path d="M12 19.2q2-1.7 4 0t4 0" fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"/>`,
+    anxieux:`<g fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"><path d="M10.4 12.8l3 1.1"/><path d="M21.6 12.8l-3 1.1"/></g><circle cx="12" cy="15.4" r="1.1" fill="${FC}"/><circle cx="20" cy="15.4" r="1.1" fill="${FC}"/><path d="M13 19.8q1.6-1.4 3 0t3 0" fill="none" stroke="${FC}" stroke-width="1.4" stroke-linecap="round"/><path d="M25 8.6c1.5 2 1.5 3.6 0 3.6s-1.5-1.6 0-3.6z" fill="#7EC8F2"/>`,
+    triste:`<g fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"><path d="M10.4 13.6q1.6-1.1 3 0"/><path d="M18.6 13.6q1.4-1.1 3 0"/></g><circle cx="12" cy="15.6" r="1.15" fill="${FC}"/><circle cx="20" cy="15.6" r="1.15" fill="${FC}"/><path d="M12.5 20.6q3.5-3 7 0" fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 17.8c1.1 1.5 1.1 2.9 0 2.9s-1.1-1.4 0-2.9z" fill="#7EC8F2"/>`,
+    colere:`<g fill="none" stroke="${FC}" stroke-width="1.7" stroke-linecap="round"><path d="M10 13.8l3.6-1.5"/><path d="M22 13.8l-3.6-1.5"/></g><circle cx="12" cy="15.6" r="1.1" fill="${FC}"/><circle cx="20" cy="15.6" r="1.1" fill="${FC}"/><path d="M12.5 20.6q3.5-2.6 7 0" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
+  };
+  const blush=`<circle cx="9.4" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/><circle cx="22.6" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/>`;
+  const wb=['radiant','content','serein'].includes(id)?blush:'';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${c.color}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".16"/><circle cx="16" cy="16" r="15" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="1"/>${faces[id]||''}${wb}</svg>`;
+}
+function negMoon(id,size){
+  const s=size||24; const body='#B7AFCE', FC='#5B5276';
+  const face=`<circle cx="12.5" cy="14.6" r="1.1" fill="${FC}"/><circle cx="19.5" cy="14.6" r="1.1" fill="${FC}"/><path d="M13 19q3-1.3 6 0" fill="none" stroke="${FC}" stroke-width="1.4" stroke-linecap="round"/>`;
+  const sym={
+    travail:`<rect x="21.1" y="23" width="5.8" height="3.4" rx="0.8" fill="#B07A3C"/><path d="M22.9 23v-0.7a1.1 1.1 0 0 1 2.2 0v0.7" fill="none" stroke="#B07A3C" stroke-width="0.9"/>`,
+    relations:`<path d="M24 26.8c-2.6-1.7-3.6-2.9-3.6-4.2 0-1 .8-1.7 1.7-1.7.7 0 1.3.4 1.6.9l.3.5.3-.5c.3-.5.9-.9 1.6-.9.9 0 1.7.7 1.7 1.7 0 1.3-1 2.5-3.6 4.2z" fill="#E8697F"/><path d="M24 21.2l-.8 1.6 1.1 1-.9 1.6" fill="none" stroke="#fff" stroke-width="0.7" stroke-linejoin="round"/>`,
+    sante:`<rect x="23.1" y="21" width="1.8" height="6" rx="0.6" fill="#E8697F"/><rect x="21" y="23.1" width="6" height="1.8" rx="0.6" fill="#E8697F"/>`,
+    argent:`<circle cx="24" cy="24" r="3" fill="#E4B54A"/><path d="M25.3 22.5a1.7 1.7 0 1 0 0 3" fill="none" stroke="#8a6a1a" stroke-width="0.7"/><path d="M22.5 23.6h2.3M22.5 24.6h2.3" stroke="#8a6a1a" stroke-width="0.6" stroke-linecap="round"/>`,
+    fatigue:`<path d="M22 22h2.2l-2.2 2.3h2.4" fill="none" stroke="#7B6FE0" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round"/><path d="M25 25.3h1.4l-1.4 1.5h1.6" fill="none" stroke="#7B6FE0" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>`,
+    moral:`<path d="M21.4 24.4a1.5 1.5 0 0 1 .4-2.9 2.1 2.1 0 0 1 4-.2 1.4 1.4 0 0 1 .2 2.8z" fill="#8FB8E6"/><path d="M22.2 25.2v1M24 25.2v1.3M25.8 25.2v1" stroke="#6FA3DE" stroke-width="0.8" stroke-linecap="round"/>`,
+    social:`<circle cx="22.4" cy="23.6" r="1.9" fill="#5AB6A6"/><circle cx="25.8" cy="24.1" r="1.9" fill="#86D2C4"/>`,
+    autre:`<path d="M24 21.4a2.6 2.6 0 1 1-2.4 3.7" fill="none" stroke="#9A86E0" stroke-width="1.1" stroke-linecap="round"/><circle cx="24" cy="24" r="0.7" fill="#9A86E0"/>`,
+  }[id]||'';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${body}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".25"/>${face}<circle cx="24" cy="24" r="6.4" fill="#fff"/><circle cx="24" cy="24" r="6.4" fill="none" stroke="rgba(0,0,0,.08)"/>${sym}</svg>`;
+}
+function drawEmoMoon(ctx,cx,cy,r,id){
+  const c=emoById[id]; if(!c) return; ctx.save();
+  ctx.fillStyle=c.color; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.16)'; ctx.beginPath(); ctx.ellipse(cx-r*.32,cy-r*.34,r*.34,r*.24,0,0,Math.PI*2); ctx.fill();
+  const FC=lum(c.color)>0.62?'#4A3A16':'#FFFFFF'; ctx.strokeStyle=FC; ctx.fillStyle=FC; ctx.lineWidth=r*0.09; ctx.lineCap='round';
+  const ex=r*0.33, ey=r*0.12;
+  const dot=(dx)=>{ ctx.beginPath(); ctx.arc(cx+dx,cy-ey,r*0.09,0,Math.PI*2); ctx.fill(); };
+  const eyeArc=(dx)=>{ const w=r*0.2; ctx.beginPath(); ctx.moveTo(cx+dx-w,cy-ey+2); ctx.quadraticCurveTo(cx+dx,cy-ey-w,cx+dx+w,cy-ey+2); ctx.stroke(); };
+  const mouth=(t)=>{ const w=r*0.3, my=cy+r*0.32; ctx.beginPath(); if(t==='big'){ ctx.moveTo(cx-w,my-2); ctx.quadraticCurveTo(cx,my+w*1.2,cx+w,my-2);} else if(t==='smile'){ ctx.moveTo(cx-w,my); ctx.quadraticCurveTo(cx,my+w*0.7,cx+w,my);} else if(t==='flat'){ ctx.moveTo(cx-w*0.7,my); ctx.lineTo(cx+w*0.7,my);} else { ctx.moveTo(cx-w,my+w*0.5); ctx.quadraticCurveTo(cx,my-w*0.4,cx+w,my+w*0.5);} ctx.stroke(); };
+  const map={ radiant:['h','big'], content:['d','smile'], serein:['h','smile'], neutre:['d','flat'], mitige:['d','flat'], anxieux:['d','flat'], triste:['d','frown'], colere:['d','frown'] };
+  const [et,mt]=map[id]||['d','smile'];
+  if(et==='h'){ eyeArc(-ex); eyeArc(ex); } else { dot(-ex); dot(ex); }
+  mouth(mt); ctx.restore();
+}
+
 /* ---------- dates ---------- */
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function today(){ return new Date(); }
@@ -404,6 +473,7 @@ createApp({
       entries:{}, friends:[], incoming:[], outgoing:[], feed:[], friendDays:[],
       view:'checkin', profileView:null, selCell:null, step:1,
       recapY: today().getFullYear(), recapM: today().getMonth(),
+      theme:'light',
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
@@ -576,6 +646,9 @@ createApp({
     async function deleteById(fid,msg){ const { error }=await sb.from('friendships').delete().eq('id',fid); if(!error){ await loadFriendGraph(); if(msg) flash(msg); } }
 
     /* ---------------- navigation ---------------- */
+    function applyTheme(t){ state.theme=t; document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('veille_theme', t); }catch(e){} }
+    function toggleTheme(){ applyTheme(state.theme==='dark'?'light':'dark'); }
+
     function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; scrollCalRight(); } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
 
     /* ---------------- résonance : même émotion qu'un ami, hier ---------------- */
@@ -646,14 +719,14 @@ createApp({
       ctx.textAlign='left';
       // héros
       if(r.dominant){
-        ctx.font='150px "Inter", sans-serif'; ctx.fillText(r.dominant.emoji, pad-6, pad+230);
+        drawEmoMoon(ctx, pad+66, pad+150, 62, r.dominant.id);
         ctx.fillStyle='#fff'; ctx.font='500 66px "Fraunces", Georgia, serif';
-        ctx.fillText('Un mois plutôt', pad, pad+330);
+        ctx.fillText('Un mois plutôt', pad+150, pad+130);
         ctx.font='italic 500 66px "Fraunces", Georgia, serif';
-        ctx.fillText(r.dominant.label.toLowerCase(), pad, pad+405);
+        ctx.fillText(r.dominant.label.toLowerCase(), pad+150, pad+200);
       } else {
         ctx.fillStyle='#fff'; ctx.font='500 60px "Fraunces", Georgia, serif';
-        ctx.fillText('Un mois sans note', pad, pad+300);
+        ctx.fillText('Un mois sans note', pad, pad+180);
       }
       // grille du mois
       const cols=7, gap=12, cell=56;
@@ -671,13 +744,13 @@ createApp({
       ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='600 40px Inter, sans-serif';
       ctx.fillText(`${r.logged} jour${r.logged>1?'s':''} noté${r.logged>1?'s':''}`, W/2, H-140);
       if(r.topNegative){ ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='400 30px Inter, sans-serif';
-        ctx.fillText(`point sensible : ${r.topNegative.emoji} ${r.topNegative.label.toLowerCase()}`, W/2, H-90); }
+        ctx.fillText(`point sensible : ${r.topNegative.label.toLowerCase()}`, W/2, H-90); }
       ctx.textAlign='left';
       return await new Promise(res=> cv.toBlob(b=>res(b),'image/png'));
     }
     function recapShareText(){
       const r=monthRecap.value;
-      const dom = r.dominant ? `${r.dominant.emoji} ${r.dominant.label.toLowerCase()} en dominante, ` : '';
+      const dom = r.dominant ? `🌙 ${r.dominant.label.toLowerCase()} en dominante, ` : '';
       return `Mon mois de ${r.monthName} sur Veille : ${dom}${r.logged} jour${r.logged>1?'s':''} noté${r.logged>1?'s':''}. 🌙`;
     }
     async function shareRecap(){
@@ -700,6 +773,7 @@ createApp({
     }
 
     onMounted(async ()=>{
+      try{ const saved=localStorage.getItem('veille_theme'); applyTheme(saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light')); }catch(e){ applyTheme('light'); }
       if(!CONFIGURED){ state.ready=true; return; }
       sb.auth.onAuthStateChange((_e,session)=>{ handleSession(session); });
       const { data } = await sb.auth.getSession();
@@ -715,6 +789,7 @@ createApp({
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
       go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
       resonances, circleWeather, monthRecap, canRecapPrev, canRecapNext, recapPrev, recapNext, shareRecap, downloadRecap,
+      emoMoon, negMoon, toggleTheme,
     };
   },
   template: `
@@ -787,7 +862,7 @@ createApp({
       <button :class="{active:state.view==='friends'}" @click="go('friends')">Amis<span v-if="state.incoming.length" class="badge">{{ state.incoming.length }}</span></button>
     </nav>
     <div class="spacer"></div>
-    <div class="whoami"><span class="av">{{ state.profile.avatar }}</span><span class="nm">{{ state.profile.display_name }}</span><button class="ghost" @click="logout">Déconnexion</button></div>
+    <div class="whoami"><span class="av">{{ state.profile.avatar }}</span><span class="nm">{{ state.profile.display_name }}</span><button class="ghost" @click="toggleTheme" :aria-label="state.theme==='dark'?'Mode jour':'Mode nuit'" :title="state.theme==='dark'?'Mode jour':'Mode nuit'">{{ state.theme==='dark'?'☀️':'🌙' }}</button><button class="ghost" @click="logout">Déconnexion</button></div>
   </header>
 
   <main>
@@ -810,8 +885,8 @@ createApp({
             <div class="row"><h3>L'émotion générale de {{ relativeDay(pick.date) }}</h3></div>
             <p class="wizard-sub">Choisissez celle qui résume le mieux la journée.</p>
             <div class="emo-grid">
-              <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{background:e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
-                <span class="dot" :style="{background:e.color}"></span><span class="e">{{ e.emoji }}</span><span class="l">{{ e.label }}</span>
+              <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{borderColor:e.color, background:e.color+'20', boxShadow:'0 12px 26px -14px '+e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
+                <span class="dot" :style="{background:e.color}"></span><span class="e mico" v-html="emoMoon(e.id,36)"></span><span class="l">{{ e.label }}</span>
               </button>
             </div>
             <div class="wizard-foot">
@@ -830,7 +905,7 @@ createApp({
           <!-- Étape 2 : point négatif -->
           <div v-else key="s2">
             <button class="recap-chip" @click="prevStep" v-if="pick.emotion">
-              <span class="chip" :style="{background:emoById[pick.emotion].color}">{{ emoById[pick.emotion].emoji }} {{ emoById[pick.emotion].label }}</span>
+              <span class="chip" :style="{background:emoById[pick.emotion].color}"><span class="mico" style="background:#fff;border-radius:50%;padding:1px" v-html="emoMoon(pick.emotion,18)"></span> {{ emoById[pick.emotion].label }}</span>
               <span class="mod">Modifier</span>
             </button>
             <div class="row" style="margin-top:16px"><h3>Un point négatif a-t-il pesé ?<span class="opt">optionnel</span></h3></div>
@@ -838,7 +913,7 @@ createApp({
             <div class="neg emo-grid">
               <button class="neg-none" :class="{on:pick.negative==='none'}" @click="chooseNegative('none')">✨ Rien à signaler — la journée était nette</button>
               <button v-for="n in NEGATIVES" :key="n.id" class="emo" :class="{on:pick.negative===n.id}" :style="pick.negative===n.id?{background:'#3A3450'}:{}" @click="chooseNegative(n.id)" :aria-pressed="pick.negative===n.id" :aria-label="n.label">
-                <span class="e">{{ n.emoji }}</span><span class="l">{{ n.label }}</span>
+                <span class="e mico" v-html="negMoon(n.id,32)"></span><span class="l">{{ n.label }}</span>
               </button>
             </div>
             <div class="wizard-foot">
@@ -853,7 +928,7 @@ createApp({
       <div class="card weather" v-if="state.friends.length && circleWeather">
         <div class="weather-head">
           <div><div class="eyebrow">Météo du cercle</div><h3>Le ciel de votre cercle, hier</h3></div>
-          <div class="weather-orb" :style="{background:circleWeather.dominant.color}">{{ circleWeather.dominant.emoji }}</div>
+          <div class="weather-orb"><span class="mico" v-html="emoMoon(circleWeather.dominant.id,46)"></span></div>
         </div>
         <div class="weather-bar"><span v-for="(s,i) in circleWeather.segments" :key="i" :style="{background:s.color, flex:s.count}" :title="s.label"></span></div>
         <p class="weather-sum">{{ circleWeather.count }} membre{{ circleWeather.count>1?'s':'' }} {{ circleWeather.count>1?'ont':'a' }} noté — dominante <b :style="{color:circleWeather.dominant.color}">{{ circleWeather.dominant.label.toLowerCase() }}</b>.</p>
@@ -863,7 +938,7 @@ createApp({
       <div class="card reso" v-if="resonances.length">
         <div class="eyebrow" style="margin-bottom:10px">Résonance</div>
         <div v-for="(r,i) in resonances" :key="i" class="reso-line">
-          <span class="reso-emo" :style="{background:r.emo.color}">{{ r.emo.emoji }}</span>
+          <span class="reso-emo"><span class="mico" v-html="emoMoon(r.emo.id,30)"></span></span>
           <span>Vous et <b>{{ r.profile.display_name }}</b> avez partagé la même couleur hier — <b :style="{color:r.emo.color}">{{ r.emo.label.toLowerCase() }}</b>.</span>
         </div>
       </div>
@@ -874,7 +949,7 @@ createApp({
         <div v-for="(f,i) in state.feed" :key="i" class="feed-item">
           <button class="feed-av" @click="openProfile(f.user)">{{ f.user.avatar }}</button>
           <div class="feed-main"><div class="nm"><button @click="openProfile(f.user)">{{ f.user.display_name }}</button></div><div class="meta">a noté {{ relativeDay(f.date) }}</div></div>
-          <div class="feed-emos"><span class="swatch" :style="{background:f.emo.color}"></span><span class="big">{{ f.emo.emoji }}</span><span v-if="f.neg" class="big" :title="f.neg.label">{{ f.neg.emoji }}</span></div>
+          <div class="feed-emos"><span class="mico" v-html="emoMoon(f.emo.id,26)"></span><span v-if="f.neg" class="mico" :title="f.neg.label" v-html="negMoon(f.neg.id,24)"></span></div>
         </div>
       </div>
       <div class="card feed" v-else>
@@ -902,7 +977,7 @@ createApp({
         <div class="stats">
           <div class="stat"><div class="n">{{ stats.total }}</div><div class="k">JOURS NOTÉS</div></div>
           <div class="stat"><div class="n">🔥 {{ stats.streak }}</div><div class="k">SÉRIE EN COURS (JOURS)</div></div>
-          <div class="stat"><div class="n" v-if="stats.top"><span>{{ stats.top.emoji }}</span></div><div class="n" v-else style="color:var(--faint)">—</div><div class="k">HUMEUR DOMINANTE{{ stats.top?' · '+stats.top.label.toUpperCase():'' }}</div></div>
+          <div class="stat"><div class="n" v-if="stats.top"><span class="mico" v-html="emoMoon(stats.top.id,30)"></span></div><div class="n" v-else style="color:var(--faint)">—</div><div class="k">HUMEUR DOMINANTE{{ stats.top?' · '+stats.top.label.toUpperCase():'' }}</div></div>
         </div>
         <div class="cal-card">
           <div class="cal-head"><h3>Une année en humeurs</h3><span style="font-size:13px;color:var(--muted)">Touchez une case pour le détail</span></div>
@@ -915,7 +990,7 @@ createApp({
                   <div v-for="(cell,ci) in wk" :key="ci" class="cell" :class="{filled:cell.entry,'empty-future':cell.future, sel: state.selCell && state.selCell.date===cell.date}" :style="cell.color?{background:cell.color}:{}" @click="selectCell(cell)">
                     <div v-if="!cell.future" class="tip">
                       <template v-if="cell.entry">
-                        <div class="t-emos">{{ emoById[cell.entry.emotion].emoji }}<span v-if="cell.entry.negative"> {{ negById[cell.entry.negative].emoji }}</span></div>
+                        <div class="t-emos"><span class="mico" v-html="emoMoon(cell.entry.emotion,18)"></span><span v-if="cell.entry.negative" class="mico" style="margin-left:4px" v-html="negMoon(cell.entry.negative,16)"></span></div>
                         <div>{{ emoById[cell.entry.emotion].label }}<span v-if="cell.entry.negative"> · {{ negById[cell.entry.negative].label }}</span></div>
                         <div style="opacity:.7">{{ longDate(cell.date) }}</div>
                       </template>
@@ -929,7 +1004,7 @@ createApp({
           <div class="cal-detail" v-if="state.selCell">
             <template v-if="state.selCell.entry">
               <span class="sw" :style="{background:emoById[state.selCell.entry.emotion].color}"></span>
-              <span class="em">{{ emoById[state.selCell.entry.emotion].emoji }}<span v-if="state.selCell.entry.negative"> {{ negById[state.selCell.entry.negative].emoji }}</span></span>
+              <span class="em"><span class="mico" v-html="emoMoon(state.selCell.entry.emotion,22)"></span><span v-if="state.selCell.entry.negative" class="mico" style="margin-left:5px" v-html="negMoon(state.selCell.entry.negative,20)"></span></span>
               <span><b>{{ longDate(state.selCell.date) }}</b> — {{ emoById[state.selCell.entry.emotion].label }}<span v-if="state.selCell.entry.negative"> · {{ negById[state.selCell.entry.negative].label }}</span></span>
             </template>
             <template v-else><span><b>{{ longDate(state.selCell.date) }}</b> — rien noté ce jour-là</span></template>
@@ -950,7 +1025,7 @@ createApp({
           <div class="recap-poster">
             <div class="rp-top"><span class="rp-brand"><span class="rp-moon"></span> Veille</span><span class="rp-month">{{ monthRecap.monthName }} {{ monthRecap.y }}</span></div>
             <div class="rp-hero">
-              <div class="rp-emoji" v-if="monthRecap.dominant">{{ monthRecap.dominant.emoji }}</div>
+              <div class="rp-emoji" v-if="monthRecap.dominant"><span class="mico" v-html="emoMoon(monthRecap.dominant.id,52)"></span></div>
               <div class="rp-title" v-if="monthRecap.dominant">Un mois plutôt<br><em>{{ monthRecap.dominant.label.toLowerCase() }}</em></div>
               <div class="rp-title" v-else>Un mois <em>sans note</em></div>
             </div>
@@ -960,7 +1035,7 @@ createApp({
             </div>
             <div class="rp-stats">
               <span>{{ monthRecap.logged }} jour{{ monthRecap.logged>1?'s':'' }} noté{{ monthRecap.logged>1?'s':'' }}</span>
-              <span v-if="monthRecap.topNegative">point sensible : {{ monthRecap.topNegative.emoji }} {{ monthRecap.topNegative.label.toLowerCase() }}</span>
+              <span v-if="monthRecap.topNegative" style="display:inline-flex;align-items:center;gap:5px">point sensible : <span class="mico" v-html="negMoon(monthRecap.topNegative.id,18)"></span> {{ monthRecap.topNegative.label.toLowerCase() }}</span>
             </div>
           </div>
           <div class="recap-actions">
@@ -973,7 +1048,7 @@ createApp({
         <div class="card recent" v-if="recentEntries.length">
           <h3 style="margin-bottom:12px">Derniers ressentis</h3>
           <div v-for="r in recentEntries" :key="r.date" class="recent-item">
-            <div class="r-emos">{{ r.emo.emoji }}<span v-if="r.neg"> {{ r.neg.emoji }}</span></div>
+            <div class="r-emos"><span class="mico" v-html="emoMoon(r.emo.id,26)"></span><span v-if="r.neg" class="mico" style="margin-left:4px" v-html="negMoon(r.neg.id,22)"></span></div>
             <div><div class="r-date">{{ longDate(r.date) }}</div><div class="r-tags">{{ r.emo.label }}<span v-if="r.neg"> · point négatif : {{ r.neg.label }}</span></div></div>
           </div>
         </div>
