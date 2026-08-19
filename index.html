@@ -219,14 +219,18 @@
   .section-title{ font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); font-weight:700; margin:26px 0 12px; }
   .fr-row{ display:flex; align-items:center; gap:14px; padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:8px; }
   .fr-row .av{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:22px; background:var(--surface-2); border:1px solid var(--line); flex:none; }
-  .fr-row .nm{ font-weight:600; font-size:15px; }
-  .fr-row .hd{ color:var(--muted); font-size:13px; }
-  .fr-row .acts{ margin-left:auto; display:flex; gap:8px; }
-  .mini{ border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font-size:13px; font-weight:700; padding:8px 15px; border-radius:999px; transition:.15s; }
+  .fr-row .who{ flex:1; min-width:0; }
+  .fr-row .nm{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fr-row .hd{ color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fr-row .acts{ margin-left:auto; display:flex; align-items:center; gap:8px; flex:none; }
+  .mini{ border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font-size:13px; font-weight:700; padding:8px 15px; border-radius:999px; transition:.15s; white-space:nowrap; }
   .mini:hover{ border-color:var(--faint); }
   .mini.brand{ background:var(--brand); color:#fff; border-color:var(--brand); }
   .mini.brand:hover{ background:var(--brand-ink); }
   .mini.warn{ color:var(--danger); }
+  .icon-btn{ width:38px; height:38px; flex:none; display:grid; place-items:center; border:1.5px solid var(--line); background:var(--surface); color:var(--muted); border-radius:50%; transition:.15s; }
+  .icon-btn:hover{ color:var(--danger); border-color:var(--danger); background:color-mix(in srgb, var(--danger) 10%, var(--surface)); }
+  .icon-btn svg{ display:block; }
   .badge{ display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; font-weight:700; margin-left:6px; }
 
   .empty{ text-align:center; padding:40px 20px; color:var(--muted); }
@@ -270,6 +274,21 @@
   .recap-actions .btn{ margin:0; width:auto; padding:12px 20px; }
   .recap-actions .grow{ flex:1; }
   .recap-note{ font-size:12px; color:var(--faint); margin:12px 0 0; }
+
+  .btn.danger{ background:var(--danger); color:#fff; box-shadow:0 6px 0 -1px rgba(150,40,60,.45); }
+  .btn.danger:hover{ filter:brightness(1.06); }
+
+  .overlay{ position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:20px; background:rgba(30,22,48,.5); backdrop-filter:blur(4px); }
+  .dialog{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:26px 24px 22px; box-shadow:var(--shadow-lg); text-align:center; }
+  .dialog-ic{ width:56px; height:56px; margin:0 auto 14px; border-radius:50%; display:grid; place-items:center; color:var(--danger); background:color-mix(in srgb, var(--danger) 14%, var(--surface)); }
+  .dialog h3{ font-size:20px; margin-bottom:8px; }
+  .dialog p{ margin:0 0 20px; color:var(--muted); font-size:14px; line-height:1.55; }
+  .dialog-acts{ display:flex; gap:10px; }
+  .dialog-acts .btn{ width:auto; flex:1; margin-top:0; }
+  .fade-enter-active, .fade-leave-active{ transition:opacity .18s ease; }
+  .fade-enter-active .dialog, .fade-leave-active .dialog{ transition:transform .22s cubic-bezier(.34,1.56,.64,1); }
+  .fade-enter-from, .fade-leave-to{ opacity:0; }
+  .fade-enter-from .dialog, .fade-leave-to .dialog{ transform:scale(.92); }
 
   .mico{ display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; line-height:0; }
   .mico svg{ display:block; }
@@ -473,7 +492,7 @@ createApp({
       entries:{}, friends:[], incoming:[], outgoing:[], feed:[], friendDays:[],
       view:'checkin', profileView:null, selCell:null, step:1,
       recapY: today().getFullYear(), recapM: today().getMonth(),
-      theme:'light',
+      theme:'light', confirmRemove:null,
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
@@ -644,6 +663,9 @@ createApp({
     async function requestFromProfile(id){ await sendRequestToId(id); }
     async function acceptById(fid){ const { error }=await sb.from('friendships').update({ status:'accepted' }).eq('id',fid); if(!error){ await loadFriendGraph(); flash('Vous êtes désormais amis'); } }
     async function deleteById(fid,msg){ const { error }=await sb.from('friendships').delete().eq('id',fid); if(!error){ await loadFriendGraph(); if(msg) flash(msg); } }
+    function askRemove(f){ state.confirmRemove=f; }
+    function closeRemove(){ state.confirmRemove=null; }
+    async function confirmRemoveFriend(){ const f=state.confirmRemove; if(!f) return; state.confirmRemove=null; await deleteById(f.fid,'Ami retiré'); }
 
     /* ---------------- navigation ---------------- */
     function applyTheme(t){ state.theme=t; document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('veille_theme', t); }catch(e){} }
@@ -789,7 +811,7 @@ createApp({
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
       go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
       resonances, circleWeather, monthRecap, canRecapPrev, canRecapNext, recapPrev, recapNext, shareRecap, downloadRecap,
-      emoMoon, negMoon, toggleTheme,
+      emoMoon, negMoon, toggleTheme, askRemove, closeRemove, confirmRemoveFriend,
     };
   },
   template: `
@@ -1066,16 +1088,16 @@ createApp({
 
         <div v-if="state.incoming.length">
           <div class="section-title">Demandes reçues</div>
-          <div v-for="f in state.incoming" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="acceptById(f.fid)">Accepter</button><button class="mini" @click="deleteById(f.fid)">Refuser</button></div></div>
+          <div v-for="f in state.incoming" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div class="who"><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="acceptById(f.fid)">Accepter</button><button class="mini" @click="deleteById(f.fid)">Refuser</button></div></div>
         </div>
         <div v-if="state.outgoing.length">
           <div class="section-title">Demandes envoyées</div>
-          <div v-for="f in state.outgoing" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><span class="hd">En attente</span><button class="mini" @click="deleteById(f.fid)">Annuler</button></div></div>
+          <div v-for="f in state.outgoing" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div class="who"><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><span class="hd">En attente</span><button class="mini" @click="deleteById(f.fid)">Annuler</button></div></div>
         </div>
 
         <div class="section-title">Mes amis <span v-if="state.friends.length" style="color:var(--faint)">· {{ state.friends.length }}</span></div>
         <div v-if="!state.friends.length" class="empty" style="padding:24px"><div class="big">👋</div>Pas encore d'amis. Envoyez une première demande ci-dessus.</div>
-        <div v-for="f in state.friends" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="openProfile(f.profile)">Voir le profil</button><button class="mini warn" @click="deleteById(f.fid,'Ami retiré')">Retirer</button></div></div>
+        <div v-for="f in state.friends" :key="f.fid" class="fr-row"><span class="av">{{ f.profile.avatar }}</span><div class="who"><div class="nm">{{ f.profile.display_name }}</div><div class="hd">@{{ f.profile.username }}</div></div><div class="acts"><button class="mini brand" @click="openProfile(f.profile)">Voir le profil</button><button class="icon-btn" @click="askRemove(f)" :aria-label="'Retirer '+f.profile.display_name" title="Retirer cet ami"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button></div></div>
       </div>
     </section>
   </main>
@@ -1087,6 +1109,22 @@ createApp({
   </nav>
 
   <transition name="pop"><div v-if="toast.show" class="toast"><span v-if="toast.color" class="sw" :style="{background:toast.color}"></span>{{ toast.msg }}</div></transition>
+
+  <transition name="fade">
+    <div v-if="state.confirmRemove" class="overlay" @click.self="closeRemove">
+      <div class="dialog" role="dialog" aria-modal="true">
+        <div class="dialog-ic">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </div>
+        <h3>Retirer cet ami ?</h3>
+        <p>Vous ne verrez plus les ressentis de <strong>{{ state.confirmRemove.profile.display_name }}</strong>, et il ne verra plus les vôtres. Vous pourrez toujours renvoyer une demande plus tard.</p>
+        <div class="dialog-acts">
+          <button class="btn secondary" @click="closeRemove">Annuler</button>
+          <button class="btn danger" @click="confirmRemoveFriend">Retirer</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </div>
 `
 }).mount('#app');
