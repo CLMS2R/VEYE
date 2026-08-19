@@ -304,16 +304,18 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 /* ---------- calendrier & stats (fonctions pures sur une map date->entry) ---------- */
 function buildCalendar(entries){
-  const end=today(); const start=new Date(end); start.setDate(start.getDate()-364);
-  start.setDate(start.getDate() - ((start.getDay()+6)%7));
-  const weeks=[]; let cur=new Date(start); const todayStr=ymd(today()); let wi=-1;
+  const end=yesterday();                                   // dernier jour affiché = hier
+  const start=new Date(end); start.setDate(start.getDate()-363);
+  start.setDate(start.getDate() - ((start.getDay()+6)%7)); // reculer au lundi
+  const weeks=[]; let cur=new Date(start); let wi=-1;
   while(cur<=end || (cur.getDay()+6)%7!==0){
     if((cur.getDay()+6)%7===0){ weeks.push([]); wi=weeks.length-1; }
     const s=ymd(cur), e=entries[s];
-    weeks[wi].push({ date:s, future:cur>end, entry:e||null, isToday:s===todayStr, color:e?emoById[e.emotion].color:null });
+    weeks[wi].push({ date:s, future:cur>end, entry:e||null, color:e?emoById[e.emotion].color:null }); // future = aujourd'hui et après → masqué
     cur.setDate(cur.getDate()+1);
     if(weeks.length>60) break;
   }
+  weeks.reverse();                                         // semaine la plus récente à gauche
   const monthMarks=[]; let last=-1;
   weeks.forEach((wk,i)=>{ const f=parseYmd(wk[0].date); if(f.getMonth()!==last){ monthMarks.push({i,label:MONTHS_FR[f.getMonth()].replace('.','')}); last=f.getMonth(); } });
   return { weeks, monthMarks };
@@ -337,7 +339,7 @@ createApp({
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
     const calScroll = ref(null);
-    function scrollCalRight(){ nextTick(()=>{ const el=calScroll.value; if(el) el.scrollLeft = el.scrollWidth; }); }
+    function scrollCalRight(){ nextTick(()=>{ const el=calScroll.value; if(el) el.scrollLeft = 0; }); }
     function flash(msg,color=null){ toast.msg=msg; toast.color=color; toast.show=true; clearTimeout(tTimer); tTimer=setTimeout(()=>toast.show=false,2600); }
 
     /* ---------------- auth ---------------- */
