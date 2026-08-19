@@ -117,6 +117,11 @@
   @keyframes pop-emo{ 0%{ transform:scale(.9); } 60%{ transform:scale(1.08) rotate(1deg); } 100%{ transform:scale(1); } }
   .emo.on .l{ color:var(--ink); font-weight:800; }
   .emo.on .dot{ display:none; }
+  .emo-mood{ border-color:transparent; }
+  .emo-mood .mico{ filter:drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
+  .emo-mood .l{ font-weight:800; }
+  .emo-mood.on{ border-color:transparent; box-shadow:inset 0 0 0 3px rgba(255,255,255,.92), 0 14px 26px -12px rgba(0,0,0,.4); }
+  .emo-mood.on .l{ color:inherit; }
   .neg .emo.on{ border-color:transparent; color:#fff; }
   .neg .emo.on .l{ color:rgba(255,255,255,.92); }
   .neg .emo .e{ font-size:26px; }
@@ -399,9 +404,11 @@ const negById = Object.fromEntries(NEGATIVES.map(n=>[n.id,n]));
 
 /* ---------- Icônes lune (mascotte déclinée par émotion / point négatif) ---------- */
 function lum(hex){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)/255; }
-function emoMoon(id,size){
+function emoMoon(id,size,mascot){
   const c=emoById[id]||{color:'#F3C25A'}; const s=size||24;
-  const FC = lum(c.color)>0.62 ? '#4A3A16' : '#FFFFFF';
+  const body = mascot ? '#F5C95B' : c.color;
+  const FC = mascot ? '#1A1622' : (lum(c.color)>0.62 ? '#4A3A16' : '#FFFFFF');
+  const rim = mascot ? 'rgba(90,60,10,.28)' : 'rgba(0,0,0,.08)';
   const faces={
     radiant:`<g fill="none" stroke="${FC}" stroke-width="1.7" stroke-linecap="round"><path d="M9.6 15q2.2-2.5 4.4 0"/><path d="M18 15q2.2-2.5 4.4 0"/><path d="M11 18.2q5 4.6 10 0"/></g>`,
     content:`<circle cx="12" cy="14.8" r="1.2" fill="${FC}"/><circle cx="20" cy="14.8" r="1.2" fill="${FC}"/><path d="M12 18.4q4 3 8 0" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
@@ -409,13 +416,14 @@ function emoMoon(id,size){
     neutre:`<circle cx="12" cy="14.8" r="1.2" fill="${FC}"/><circle cx="20" cy="14.8" r="1.2" fill="${FC}"/><path d="M12.8 19h6.4" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
     mitige:`<circle cx="12" cy="14.6" r="1.2" fill="${FC}"/><circle cx="20" cy="14.6" r="1.2" fill="${FC}"/><path d="M12 19.2q2-1.7 4 0t4 0" fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"/>`,
     anxieux:`<g fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"><path d="M10.4 12.8l3 1.1"/><path d="M21.6 12.8l-3 1.1"/></g><circle cx="12" cy="15.4" r="1.1" fill="${FC}"/><circle cx="20" cy="15.4" r="1.1" fill="${FC}"/><path d="M13 19.8q1.6-1.4 3 0t3 0" fill="none" stroke="${FC}" stroke-width="1.4" stroke-linecap="round"/><path d="M25 8.6c1.5 2 1.5 3.6 0 3.6s-1.5-1.6 0-3.6z" fill="#7EC8F2"/>`,
-    colere:`<g fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"><path d="M10.4 13.6q1.6-1.1 3 0"/><path d="M18.6 13.6q1.4-1.1 3 0"/></g><circle cx="12" cy="15.6" r="1.15" fill="${FC}"/><circle cx="20" cy="15.6" r="1.15" fill="${FC}"/><path d="M12.5 20.6q3.5-3 7 0" fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 17.8c1.1 1.5 1.1 2.9 0 2.9s-1.1-1.4 0-2.9z" fill="#7EC8F2"/>`,
+    colere:`<g fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"><path d="M10.4 13.6q1.6-1.1 3 0"/><path d="M18.6 13.6q1.4-1.1 3 0"/></g><circle cx="12" cy="15.6" r="1.15" fill="${FC}"/><circle cx="20" cy="15.6" r="1.15" fill="${FC}"/><path d="M12.5 20.6q3.5-3 7 0" fill="none" stroke="${FC}" stroke-width="1.5" stroke-linecap="round"/>`,
     triste:`<g fill="none" stroke="${FC}" stroke-width="1.7" stroke-linecap="round"><path d="M10 13.8l3.6-1.5"/><path d="M22 13.8l-3.6-1.5"/></g><circle cx="12" cy="15.6" r="1.1" fill="${FC}"/><circle cx="20" cy="15.6" r="1.1" fill="${FC}"/><path d="M12.5 20.6q3.5-2.6 7 0" fill="none" stroke="${FC}" stroke-width="1.6" stroke-linecap="round"/>`,
   };
   const blush=`<circle cx="9.4" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/><circle cx="22.6" cy="18.6" r="1.7" fill="#F49CB6" opacity=".5"/>`;
   const wb=['radiant','content','serein'].includes(id)?blush:'';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${c.color}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".16"/><circle cx="16" cy="16" r="15" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="1"/>${faces[id]||''}${wb}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${body}"/><ellipse cx="11.5" cy="11" rx="5.2" ry="3.6" fill="#fff" opacity=".16"/><circle cx="16" cy="16" r="15" fill="none" stroke="${rim}" stroke-width="1"/>${faces[id]||''}${wb}</svg>`;
 }
+function textOn(hex){ return lum(hex)>0.62 ? '#2C2540' : '#FFFFFF'; }
 function negMoon(id,size){
   const s=size||24; const body='#B7AFCE', FC='#5B5276';
   const face=`<circle cx="12.5" cy="14.6" r="1.1" fill="${FC}"/><circle cx="19.5" cy="14.6" r="1.1" fill="${FC}"/><path d="M13 19q3-1.3 6 0" fill="none" stroke="${FC}" stroke-width="1.4" stroke-linecap="round"/>`;
@@ -811,7 +819,7 @@ createApp({
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
       go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
       resonances, circleWeather, monthRecap, canRecapPrev, canRecapNext, recapPrev, recapNext, shareRecap, downloadRecap,
-      emoMoon, negMoon, toggleTheme, askRemove, closeRemove, confirmRemoveFriend,
+      emoMoon, negMoon, textOn, toggleTheme, askRemove, closeRemove, confirmRemoveFriend,
     };
   },
   template: `
@@ -907,8 +915,8 @@ createApp({
             <div class="row"><h3>L'émotion générale de {{ relativeDay(pick.date) }}</h3></div>
             <p class="wizard-sub">Choisissez celle qui résume le mieux la journée.</p>
             <div class="emo-grid">
-              <button v-for="e in EMOTIONS" :key="e.id" class="emo" :class="{on:pick.emotion===e.id}" :style="pick.emotion===e.id?{borderColor:e.color, background:e.color+'20', boxShadow:'0 12px 26px -14px '+e.color}:{}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
-                <span class="dot" :style="{background:e.color}"></span><span class="e mico" v-html="emoMoon(e.id,36)"></span><span class="l">{{ e.label }}</span>
+              <button v-for="e in EMOTIONS" :key="e.id" class="emo emo-mood" :class="{on:pick.emotion===e.id}" :style="{background:e.color}" @click="chooseEmotion(e.id)" :aria-pressed="pick.emotion===e.id" :aria-label="e.label">
+                <span class="e mico" v-html="emoMoon(e.id,36,true)"></span><span class="l" :style="{color:textOn(e.color)}">{{ e.label }}</span>
               </button>
             </div>
             <div class="wizard-foot">
