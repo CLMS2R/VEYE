@@ -140,10 +140,10 @@
   .profile-hero{ border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); background:var(--surface); border:1px solid var(--line); margin-bottom:22px; }
   .hero-band{ height:104px; background:var(--dusk); position:relative; }
   .hero-band .aura{ position:absolute; right:-40px; top:-60px; width:200px; height:200px; border-radius:50%; filter:blur(10px); opacity:.55; }
-  .hero-body{ padding:0 24px 22px; display:flex; align-items:flex-end; gap:18px; margin-top:-42px; flex-wrap:wrap; }
+  .hero-body{ padding:0 24px 22px; display:flex; align-items:flex-end; gap:18px; margin-top:-42px; flex-wrap:wrap; position:relative; z-index:1; }
   .hero-av{ width:84px; height:84px; border-radius:22px; background:var(--surface); border:3px solid var(--surface); box-shadow:var(--shadow); display:grid; place-items:center; font-size:42px; flex:none; }
-  .hero-id{ flex:1; min-width:180px; padding-bottom:2px; }
-  .hero-id h1{ font-size:27px; }
+  .hero-id{ flex:1; min-width:0; padding-bottom:2px; }
+  .hero-id h1{ font-size:27px; overflow-wrap:anywhere; }
   .hero-id .handle{ color:var(--muted); font-size:14px; }
   .hero-actions{ padding-bottom:4px; }
   .hero-actions .btn{ width:auto; padding:10px 18px; margin:0; font-size:14px; }
@@ -241,6 +241,8 @@
     .emo .e{ font-size:32px; }
     .checkin-foot .btn{ width:100%; }
     .hero-actions, .hero-actions .btn{ width:100%; }
+    .hero-body{ flex-direction:column; align-items:flex-start; gap:12px; }
+    .hero-id h1{ font-size:22px; }
     .fr-add{ flex-direction:column; align-items:stretch; }
     .fr-add .btn{ width:100%; }
     .toast{ bottom:88px; }
@@ -255,7 +257,7 @@
 <div id="app"></div>
 
 <script>
-const { createApp, reactive, computed, onMounted, ref } = Vue;
+const { createApp, reactive, computed, onMounted, ref, nextTick } = Vue;
 
 /* =====================================================================
    ⚙️  CONFIGURATION — remplacez ces deux valeurs par les vôtres.
@@ -334,6 +336,8 @@ createApp({
       view:'checkin', profileView:null, selCell:null,
     });
     const toast = reactive({ show:false, msg:'', color:null }); let tTimer=null;
+    const calScroll = ref(null);
+    function scrollCalRight(){ nextTick(()=>{ const el=calScroll.value; if(el) el.scrollLeft = el.scrollWidth; }); }
     function flash(msg,color=null){ toast.msg=msg; toast.color=color; toast.show=true; clearTimeout(tTimer); tTimer=setTimeout(()=>toast.show=false,2600); }
 
     /* ---------------- auth ---------------- */
@@ -455,7 +459,7 @@ createApp({
       let prof = typeof p==='string' ? (await sb.from('profiles').select('*').eq('id',p).maybeSingle()).data : p;
       if(!prof) return;
       const entries = await fetchEntries(prof.id);
-      state.profileView={ profile:prof, entries }; state.selCell=null; state.view='profile';
+      state.profileView={ profile:prof, entries }; state.selCell=null; state.view='profile'; scrollCalRight();
     }
     function selectCell(cell){ if(!cell || cell.future) return; state.selCell = cell; }
     function relationTo(id){
@@ -495,7 +499,7 @@ createApp({
     async function deleteById(fid,msg){ const { error }=await sb.from('friendships').delete().eq('id',fid); if(!error){ await loadFriendGraph(); if(msg) flash(msg); } }
 
     /* ---------------- navigation ---------------- */
-    function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
+    function go(v){ state.view=v; if(v==='profile'){ state.profileView=null; state.selCell=null; scrollCalRight(); } if(v==='checkin'){ loadPickFor(ymd(yesterday())); } }
 
     onMounted(async ()=>{
       if(!CONFIGURED){ state.ready=true; return; }
@@ -511,7 +515,7 @@ createApp({
       pick, alreadyDone, canSave, chooseEmotion, chooseNegative, saveEntry, pickPreview, loadPickFor, minDate, maxDate,
       activeProfile, activeEntries, isSelf, calendar, stats, recentEntries, canSeeEntries, openProfile, relationTo, incomingFid,
       friendQuery, friendError, sendRequest, requestFromProfile, acceptById, deleteById,
-      go, selectCell, relativeDay, longDate, ymd, yesterday,
+      go, selectCell, relativeDay, longDate, ymd, yesterday, calScroll,
     };
   },
   template: `
@@ -663,7 +667,7 @@ createApp({
         </div>
         <div class="cal-card">
           <div class="cal-head"><h3>Une année en humeurs</h3><span style="font-size:13px;color:var(--muted)">Touchez une case pour le détail</span></div>
-          <div class="cal-scroll">
+          <div class="cal-scroll" ref="calScroll">
             <div class="cal">
               <div class="daylabels" style="grid-row:2"><span></span><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span></div>
               <div class="months"><span v-for="m in calendar.monthMarks" :key="m.i" :style="{left:(m.i*16)+'px'}">{{ m.label }}</span></div>
