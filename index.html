@@ -234,8 +234,8 @@ const { createApp, reactive, computed, onMounted, ref } = Vue;
    ( « Project URL »  et  la clé publique « anon » ).
    Exposer la clé anon ici est normal : c'est la RLS qui protège les données.
    ===================================================================== */
-const SUPABASE_URL      = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+const SUPABASE_URL      = 'https://hxaormttsnjftyunjkqi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_wiy-sK275uTVOtMjWxYh9g_LF9tSWnx';
 
 const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-');
 const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
